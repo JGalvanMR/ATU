@@ -1,116 +1,121 @@
-﻿using System.Security.Cryptography;
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ATU.Shared;
 
-/// <summary>
-/// Autorización Transaccional Única (ATU) Core
-/// 
-/// El código OTP se genera como:
-///   HMAC-SHA256( DeviceSecret | TimeWindow | BatchID | SupervisorID )
-/// Esto hace que un código generado para el Lote A sea INVÁLIDO para el Lote B.
-/// </summary>
 public static class ATUCore
 {
-    // Ventana de tiempo: 90 segundos (3 ventanas de 30s para tolerancia de reloj)
-    private const int TimeStepSeconds = 30;
+    public const int TimeStepSeconds = 30;
+    public const int TtlSeconds = 90;
     private const int OtpDigits = 8;
-    private const int ValidWindowCount = 3; // ±1.5 min
 
-    /// <summary>
-    /// Genera el OTP vinculado a lote + supervisor + dispositivo + tiempo.
-    /// </summary>
+    private static readonly ConcurrentDictionary<string, DateTimeOffset> UsedOtps = new();
+
     public static string GenerateOTP(
-        string deviceSecret,
+        string secret,
         string batchId,
         string supervisorId,
-        DateTimeOffset? at = null)
+        DateTimeOffset? timestamp = null)
     {
-        var window = GetTimeWindow(at ?? DateTimeOffset.UtcNow);
-        return ComputeOTP(deviceSecret, batchId, supervisorId, window);
+        var timeWindow = GetTimeWindow(timestamp ?? DateTimeOffset.UtcNow);
+        var hmac = ComputeHMAC(secret, timeWindow, batchId, supervisorId);
+
+        var offset = hmac[^1] & 0x0F;
+        var binaryCode = ((hmac[offset] & 0x7F) << 24)
+                         | ((hmac[offset + 1] & 0xFF) << 16)
+                         | ((hmac[offset + 2] & 0xFF) << 8)
+                         | (hmac[offset + 3] & 0xFF);
+
+        var otp = (binaryCode % (int)Math.Pow(10, OtpDigits)).ToString();
+        return otp.PadLeft(OtpDigits, '0');
     }
 
-    /// <summary>
-    /// Valida el OTP. Devuelve el resultado con semántica de semáforo.
-    /// </summary>
-    public static ATUValidationResult Validate(
+    public static OtpValidationResult ValidateOTP(
         string candidateOtp,
-        string deviceSecret,
+        string secret,
         string claimedBatchId,
         string actualBatchId,
-        string supervisorId)
+        string supervisorId,
+        DateTimeOffset? now = null)
     {
-        // ROJO: El código fue generado para un lote distinto → FRAUDE
         if (!string.Equals(claimedBatchId, actualBatchId, StringComparison.OrdinalIgnoreCase))
         {
-            return new ATUValidationResult(
-                ATUStatus.Red,
-                "FRAUDE: Código vinculado a otro lote. Alerta registrada.",
-                false);
+            return new OtpValidationResult(false, OtpValidationStatus.Fraud, "Batch inválido: posible fraude.");
         }
 
-        var now = DateTimeOffset.UtcNow;
-        var currentWindow = GetTimeWindow(now);
+        var utcNow = now ?? DateTimeOffset.UtcNow;
+        PurgeExpiredReplayLocks(utcNow);
 
-        // Validar en ventana actual y adyacentes (tolerancia de reloj)
-        for (int delta = -ValidWindowCount; delta <= ValidWindowCount; delta++)
+        var currentWindow = GetTimeWindow(utcNow);
+        var oldestAllowedWindow = GetTimeWindow(utcNow.AddSeconds(-TtlSeconds));
+
+        for (var window = currentWindow; window >= oldestAllowedWindow; window--)
         {
-            var window = currentWindow + delta;
-            var expected = ComputeOTP(deviceSecret, claimedBatchId, supervisorId, window);
-
-            if (CryptographicEquals(candidateOtp, expected))
+            var expectedOtp = GenerateOTP(secret, claimedBatchId, supervisorId, FromTimeWindow(window));
+            if (!FixedTimeEquals(candidateOtp, expectedOtp))
             {
-                bool isFresh = delta == 0;
-                return new ATUValidationResult(
-                    isFresh ? ATUStatus.Green : ATUStatus.Yellow,
-                    isFresh ? "Autorización válida." : "Código expirado. Solicite uno nuevo.",
-                    isFresh);
+                continue;
+            }
+
+            var replayKey = BuildReplayKey(candidateOtp, claimedBatchId, supervisorId, window);
+            if (!UsedOtps.TryAdd(replayKey, utcNow.AddSeconds(TtlSeconds)))
+            {
+                return new OtpValidationResult(false, OtpValidationStatus.ReplayAttack, "OTP ya utilizado.");
+            }
+
+            var status = window == currentWindow
+                ? OtpValidationStatus.Valid
+                : OtpValidationStatus.PreviousWindow;
+
+            return new OtpValidationResult(true, status, status == OtpValidationStatus.Valid
+                ? "OTP válido."
+                : "OTP válido en ventana previa; solicitar nuevo OTP.");
+        }
+
+        return new OtpValidationResult(false, OtpValidationStatus.ExpiredOrInvalid, "OTP inválido o expirado.");
+    }
+
+    public static byte[] ComputeHMAC(string secret, long timeWindow, string batchId, string supervisorId)
+    {
+        var payload = $"{timeWindow}|{batchId.ToUpperInvariant()}|{supervisorId.ToUpperInvariant()}";
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+        return hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+    }
+
+    public static long GetTimeWindow(DateTimeOffset timestamp) => timestamp.ToUnixTimeSeconds() / TimeStepSeconds;
+
+    private static DateTimeOffset FromTimeWindow(long timeWindow) => DateTimeOffset.FromUnixTimeSeconds(timeWindow * TimeStepSeconds);
+
+    public static bool FixedTimeEquals(string left, string right)
+    {
+        var leftBytes = Encoding.UTF8.GetBytes(left ?? string.Empty);
+        var rightBytes = Encoding.UTF8.GetBytes(right ?? string.Empty);
+        return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
+    }
+
+    private static string BuildReplayKey(string otp, string batchId, string supervisorId, long timeWindow)
+        => $"{otp}:{batchId}:{supervisorId}:{timeWindow}";
+
+    private static void PurgeExpiredReplayLocks(DateTimeOffset now)
+    {
+        foreach (var entry in UsedOtps)
+        {
+            if (entry.Value <= now)
+            {
+                UsedOtps.TryRemove(entry.Key, out _);
             }
         }
-
-        return new ATUValidationResult(ATUStatus.Red, "Código inválido o no existe.", false);
-    }
-
-    // ── Internals ──────────────────────────────────────────────────────────
-
-    private static long GetTimeWindow(DateTimeOffset time)
-        => time.ToUnixTimeSeconds() / TimeStepSeconds;
-
-    private static string ComputeOTP(
-        string deviceSecret,
-        string batchId,
-        string supervisorId,
-        long timeWindow)
-    {
-        // El mensaje incluye TODOS los contextos: si cambia cualquiera, el hash cambia
-        var message = $"{batchId.ToUpperInvariant()}|{supervisorId.ToUpperInvariant()}|{timeWindow}";
-        var keyBytes = Encoding.UTF8.GetBytes(deviceSecret);
-        var msgBytes = Encoding.UTF8.GetBytes(message);
-
-        using var hmac = new HMACSHA256(keyBytes);
-        var hash = hmac.ComputeHash(msgBytes);
-
-        // Extraer 8 dígitos con offset dinámico (similar a RFC 6238 TOTP)
-        int offset = hash[^1] & 0x0F;
-        long code = ((hash[offset] & 0x7F) << 24)
-                  | ((hash[offset + 1] & 0xFF) << 16)
-                  | ((hash[offset + 2] & 0xFF) << 8)
-                  | (hash[offset + 3] & 0xFF);
-
-        return (code % (long)Math.Pow(10, OtpDigits)).ToString().PadLeft(OtpDigits, '0');
-    }
-
-    /// <summary>
-    /// Comparación en tiempo constante para evitar timing attacks.
-    /// </summary>
-    private static bool CryptographicEquals(string a, string b)
-    {
-        var aBytes = Encoding.UTF8.GetBytes(a);
-        var bBytes = Encoding.UTF8.GetBytes(b);
-        return CryptographicOperations.FixedTimeEquals(aBytes, bBytes);
     }
 }
 
-public record ATUValidationResult(ATUStatus Status, string Message, bool IsAuthorized);
+public enum OtpValidationStatus
+{
+    Valid,
+    PreviousWindow,
+    ExpiredOrInvalid,
+    Fraud,
+    ReplayAttack
+}
 
-public enum ATUStatus { Green, Yellow, Red }
+public sealed record OtpValidationResult(bool IsValid, OtpValidationStatus Status, string Message);
