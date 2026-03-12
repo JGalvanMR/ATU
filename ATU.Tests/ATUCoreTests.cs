@@ -4,6 +4,10 @@ namespace ATU.Tests;
 
 public class ATUCoreTests
 {
+    public ATUCoreTests()
+    {
+        ATUCore.ResetReplayCache();
+    }
     private const string Secret = "secret-device-32bytes-value-123456";
     private const string Batch = "BATCH-100";
     private const string OtherBatch = "BATCH-200";

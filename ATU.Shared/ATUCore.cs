@@ -12,6 +12,11 @@ public static class ATUCore
 
     private static readonly ConcurrentDictionary<string, DateTimeOffset> UsedOtps = new();
 
+    internal static void ResetReplayCache()
+    {
+        UsedOtps.Clear();
+    }
+
     public static string GenerateOTP(
         string secret,
         string batchId,
@@ -58,10 +63,18 @@ public static class ATUCore
                 continue;
             }
 
-            var replayKey = BuildReplayKey(candidateOtp, claimedBatchId, supervisorId, window);
+            var replayKey = $"{candidateOtp}:{claimedBatchId}:{supervisorId}";
+
             if (!UsedOtps.TryAdd(replayKey, utcNow.AddSeconds(TtlSeconds)))
             {
                 return new OtpValidationResult(false, OtpValidationStatus.ReplayAttack, "OTP ya utilizado.");
+            }
+
+            var generationTime = FromTimeWindow(window);
+
+            if ((utcNow - generationTime).TotalSeconds > TtlSeconds)
+            {
+                return new OtpValidationResult(false, OtpValidationStatus.ExpiredOrInvalid, "OTP expirado.");
             }
 
             var status = window == currentWindow
@@ -94,9 +107,6 @@ public static class ATUCore
         return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
     }
 
-    private static string BuildReplayKey(string otp, string batchId, string supervisorId, long timeWindow)
-        => $"{otp}:{batchId}:{supervisorId}:{timeWindow}";
-
     private static void PurgeExpiredReplayLocks(DateTimeOffset now)
     {
         foreach (var entry in UsedOtps)
@@ -107,6 +117,7 @@ public static class ATUCore
             }
         }
     }
+
 }
 
 public enum OtpValidationStatus
