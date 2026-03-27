@@ -20,6 +20,7 @@ public static class ATUCore
     public static string GenerateOTP(
         string secret,
         string batchId,
+        string expirationDate,
         string supervisorId,
         DateTimeOffset? timestamp = null)
     {
