@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.37027.9 d17.14
+VisualStudioVersion = 17.14.37027.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.Shared", "ATU.Shared\ATU.Shared.csproj", "{AA3C0626-9903-44DE-A67C-93ECF5126A8D}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.Tests", "ATU.Tests\ATU.Tests.csproj", "{F293A9C6-4301-417E-8127-9913C290E42A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.PWA", "ATU.PWA\ATU.PWA.csproj", "{0E01322A-1730-4F4D-B078-16AF808159CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.CamaraFria", "ATU.CamaraFria\ATU.CamaraFria.csproj", "{5FD4380E-4455-47ED-B628-0D9580665B70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,12 @@ Global
 		{0E01322A-1730-4F4D-B078-16AF808159CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E01322A-1730-4F4D-B078-16AF808159CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E01322A-1730-4F4D-B078-16AF808159CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FD4380E-4455-47ED-B628-0D9580665B70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FD4380E-4455-47ED-B628-0D9580665B70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FD4380E-4455-47ED-B628-0D9580665B70}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{5FD4380E-4455-47ED-B628-0D9580665B70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FD4380E-4455-47ED-B628-0D9580665B70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FD4380E-4455-47ED-B628-0D9580665B70}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

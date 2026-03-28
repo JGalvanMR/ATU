@@ -1,112 +1,114 @@
-using ATU.Shared;
 using Microsoft.AspNetCore.Mvc;
+using ATU.Shared;
+using ATU.Shared.Models;
 
-namespace ATU.AuthService;
+namespace ATU.AuthService.Controllers;
 
-public static class OTPController
+[ApiController]
+[Route("api/otp")]
+public class OTPController : ControllerBase
 {
-    public static IEndpointRouteBuilder MapOtpEndpoints(this IEndpointRouteBuilder app)
+    private readonly IAuditEventPublisher _audit;
+    private readonly IGeofenceService _geofence;
+    private readonly IDeviceRepository _devices;
+    private readonly IEncryptionService _encryption;
+
+    public OTPController(
+        IAuditEventPublisher audit,
+        IGeofenceService geofence,
+        IDeviceRepository devices,
+        IEncryptionService encryption)
     {
-        app.MapPost("/otp/generate", GenerateOtp);
-        app.MapPost("/otp/validate", ValidateOtp);
-        return app;
+        _audit = audit;
+        _geofence = geofence;
+        _devices = devices;
+        _encryption = encryption;
     }
 
-    private static async Task<IResult> GenerateOtp(
-        [FromBody] GenerateOtpRequest request,
-        DeviceEnrollmentService enrollmentService,
-        IOtpRepository otpRepository)
+    [HttpPost("generate")]
+    public async Task<IActionResult> Generate([FromBody] GenerateOTPRequest request)
     {
-        var device = await enrollmentService.ValidateDevice(request.OperatorId, request.HardwareId, request.UserAgent, request.Platform);
-        if (!device.IsValid || string.IsNullOrWhiteSpace(device.Secret))
+        var device = await _devices.GetByIdAsync(request.OperatorId);
+        if (device == null)
+            return Unauthorized(new { error = "Dispositivo no enrolado" });
+
+        // Validar geofencing
+        if (request.Latitude.HasValue && request.Longitude.HasValue)
         {
-            return Results.Unauthorized();
+            var geo = await _geofence.ValidateAsync(
+                device.ColdStorageZoneId,
+                request.Latitude.Value,
+                request.Longitude.Value);
+
+            if (!geo.IsValid)
+                return BadRequest(new { error = geo.Message });
         }
 
-        var otp = ATUCore.GenerateOTP(device.Secret, request.BatchId, request.SupervisorId);
-        var record = new OtpRecord
+        // CORREGIDO: Desencriptar el secret antes de usarlo
+        var secret = _encryption.Decrypt(device.EncryptedSecret);
+
+        var otp = ATUCore.GenerateOTP(
+            secret,
+            request.ProductoClave,
+            request.Recibo,
+            request.Tarima,
+            request.FechaCaducidad,
+            request.SupervisorId);
+
+        await _audit.PublishAsync(new AuditEvent
         {
-            Otp = otp,
-            BatchId = request.BatchId,
+            Type = "OTP_GENERATED",
             SupervisorId = request.SupervisorId,
-            OperatorId = request.OperatorId,
-            CreatedAt = DateTimeOffset.UtcNow,
-            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(ATUCore.TtlSeconds)
-        };
+            BatchId = $"{request.ProductoClave}-{request.Recibo}-{request.Tarima}",
+            Timestamp = DateTimeOffset.UtcNow
+        });
 
-        await otpRepository.Save(record);
-        return Results.Ok(new GenerateOtpResponse(otp, record.ExpiresAt));
+        return Ok(new GenerateOTPResponse(
+            otp,
+            DateTimeOffset.UtcNow.AddSeconds(30),
+            request.ProductoClave,
+            request.Recibo,
+            request.Tarima,
+            request.FechaCaducidad));
     }
 
-    private static async Task<IResult> ValidateOtp(
-        [FromBody] ValidateOtpRequest request,
-        DeviceEnrollmentService enrollmentService,
-        IOtpRepository otpRepository,
-        IGeofenceService geofenceService)
+    [HttpPost("validate")]
+    public async Task<IActionResult> Validate([FromBody] ValidateOTPRequest request)
     {
-        var device = await enrollmentService.ValidateDevice(request.OperatorId, request.HardwareId, request.UserAgent, request.Platform);
-        if (!device.IsValid || string.IsNullOrWhiteSpace(device.Secret))
-        {
-            return Results.Unauthorized();
-        }
+        var device = await _devices.GetByIdAsync(request.OperatorId);
+        if (device == null)
+            return Unauthorized(new { error = "Dispositivo no encontrado" });
 
-        var geofence = geofenceService.ValidateProximity(request.OperatorCoordinate, request.SupervisorCoordinate);
-        if (!geofence.IsAllowed)
-        {
-            return Results.BadRequest(new { geofence.Message, geofence.DistanceMeters });
-        }
+        // CORREGIDO: Desencriptar el secret
+        var secret = _encryption.Decrypt(device.EncryptedSecret);
 
-        var stored = await otpRepository.GetLatest(request.BatchId, request.SupervisorId);
-        if (stored is not null && stored.IsUsed)
-        {
-            return Results.Ok(new ValidateOtpResponse(false, OtpValidationStatus.ReplayAttack, "OTP ya utilizado."));
-        }
+        var result = ATUCore.Validate(
+            request.Otp,
+            secret,
+            request.ProductoClave,
+            request.Recibo,
+            request.Tarima,
+            request.FechaCaducidad,
+            request.SupervisorId,
+            request.ProductoClave,
+            request.Recibo,
+            request.Tarima);
 
-        var result = ATUCore.ValidateOTP(request.Otp, device.Secret, request.ClaimedBatchId, request.BatchId, request.SupervisorId);
-        if (result.IsValid && stored is not null)
+        await _audit.PublishAsync(new AuditEvent
         {
-            stored.IsUsed = true;
-            stored.UsedAt = DateTimeOffset.UtcNow;
-            await otpRepository.Update(stored);
-        }
+            Type = result.Status.ToString(),
+            SupervisorId = request.SupervisorId,
+            IsAuthorized = result.IsAuthorized,
+            Message = result.Message,
+            Timestamp = DateTimeOffset.UtcNow
+        });
 
-        return Results.Ok(new ValidateOtpResponse(result.IsValid, result.Status, result.Message));
+        return Ok(new ValidateOTPResponse(
+            result.Status.ToString(),
+            result.Message,
+            result.IsAuthorized,
+            result.ExpectedBatchId?.Split('-')[0],
+            result.ExpectedBatchId?.Split('-')[1],
+            result.ExpectedBatchId?.Split('-')[2]));
     }
-}
-
-public sealed record GenerateOtpRequest(string OperatorId, string SupervisorId, string BatchId, string HardwareId, string UserAgent, string Platform);
-public sealed record GenerateOtpResponse(string Otp, DateTimeOffset ExpiresAt);
-
-public sealed record ValidateOtpRequest(
-    string Otp,
-    string OperatorId,
-    string SupervisorId,
-    string BatchId,
-    string ClaimedBatchId,
-    string HardwareId,
-    string UserAgent,
-    string Platform,
-    Coordinate OperatorCoordinate,
-    Coordinate SupervisorCoordinate);
-
-public sealed record ValidateOtpResponse(bool IsValid, OtpValidationStatus Status, string Message);
-
-public sealed class OtpRecord
-{
-    public Guid Id { get; init; } = Guid.NewGuid();
-    public required string Otp { get; init; }
-    public required string BatchId { get; init; }
-    public required string SupervisorId { get; init; }
-    public required string OperatorId { get; init; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public DateTimeOffset ExpiresAt { get; init; }
-    public bool IsUsed { get; set; }
-    public DateTimeOffset? UsedAt { get; set; }
-}
-
-public interface IOtpRepository
-{
-    Task Save(OtpRecord record);
-    Task<OtpRecord?> GetLatest(string batchId, string supervisorId);
-    Task Update(OtpRecord record);
 }

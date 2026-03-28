@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+	<TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ATU - Cámara Fría"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"/>
+
+	<TextView
+        android:id="@+id/txtStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Listo"
+        android:textSize="12sp"
+        android:textColor="#666"
+        android:layout_marginBottom="10dp"/>
+
+	<EditText
+        android:id="@+id/txtResponsable"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre del responsable"
+        android:inputType="textPersonName"/>
+
+	<EditText
+        android:id="@+id/txtProducto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Clave de producto"
+        android:inputType="text"/>
+
+	<EditText
+        android:id="@+id/txtRecibo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Número de recibo/folio"
+        android:inputType="number"/>
+
+	<EditText
+        android:id="@+id/txtTarima"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Número de tarima"
+        android:inputType="number"/>
+
+	<EditText
+        android:id="@+id/txtFechaCaducidad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Fecha caducidad (DD/MM/YYYY)"
+        android:inputType="date"/>
+
+	<Button
+        android:id="@+id/btnGenerarOTP"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="GENERAR CÓDIGO OTP"
+        android:textSize="18sp"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="#0066FF"/>
+
+</LinearLayout>
