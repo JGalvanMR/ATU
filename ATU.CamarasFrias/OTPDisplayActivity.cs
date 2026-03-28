@@ -6,7 +6,7 @@ using Android.Views;
 using Android.Widget;
 using System.Timers;
 
-namespace ATU.CamaraFria;
+namespace ATU.CamarasFrias;
 
 [Activity(Label = "CÓDIGO OTP", NoHistory = true,
     ScreenOrientation = ScreenOrientation.Portrait)]

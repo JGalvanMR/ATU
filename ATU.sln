@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.Tests", "ATU.Tests\ATU.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.PWA", "ATU.PWA\ATU.PWA.csproj", "{0E01322A-1730-4F4D-B078-16AF808159CF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.CamaraFria", "ATU.CamaraFria\ATU.CamaraFria.csproj", "{5FD4380E-4455-47ED-B628-0D9580665B70}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATU.CamarasFrias", "ATU.CamarasFrias\ATU.CamarasFrias.csproj", "{5FD4380E-4455-47ED-B628-0D9580665B70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

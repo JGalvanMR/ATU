@@ -8,7 +8,7 @@ using System.Net.Http.Json;
 using Android.Locations;
 using Android.Content.PM;
 
-namespace ATU.CamaraFria;
+namespace ATU.CamarasFrias;
 
 [Activity(Label = "ATU - Cámaras Frías", MainLauncher = true,
     ScreenOrientation = ScreenOrientation.Portrait)]
@@ -41,7 +41,7 @@ public class MainActivity : Activity, ILocationListener
         base.OnCreate(savedInstanceState);
         SetContentView(Resource.Layout.activity_main);
 
-        _offlineQueue = new OfflineQueue<PendingOTPValidation>("ATU.CamaraFria", "pending_validations");
+        _offlineQueue = new OfflineQueue<PendingOTPValidation>("ATU.CamarasFrias", "pending_validations");
         _deviceId = GetDeviceId();
         LoadDeviceSecret();
 
