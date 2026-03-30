@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<!-- Permisos de cámara para escaneo -->
+	<uses-permission android:name="android.permission.CAMERA" />
+	<uses-feature android:name="android.hardware.camera" android:required="false" />
+	<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+	<!-- Permisos para biometría -->
+	<uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+	<!-- Permiso para vibración -->
+	<uses-permission android:name="android.permission.VIBRATE" />
+
+	<!-- Permiso para red (local) -->
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+	<!-- Permiso para GPS (opcional, para geofencing) -->
+	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+	<application
+        android:allowBackup="true"
+        android:icon="@mipmap/appicon"
+        android:label="ATU Cámara Fría"
+        android:roundIcon="@mipmap/appicon_round"
+        android:supportsRtl="true"
+        android:theme="@style/Maui.SplashTheme"
+        android:hardwareAccelerated="true">
+
+		<!-- Habilitar cleartext para red local HTTP -->
+		<uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
+
+		<activity
+            android:name="com.microsoft.maui.essentials.PlatformActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:usesCleartextTraffic="true" />
+	</application>
+
+</manifest>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:ATU.CamaraFria.Views"
+       x:Class="ATU.CamaraFria.AppShell"
+       FlyoutBehavior="Disabled"
+       BackgroundColor="#070B18">
+
+    <Shell.FlyoutHeader>
+        <!--  Sin flyout  -->
+    </Shell.FlyoutHeader>
+
+    <TabBar Route="MainTab"
+            BarBackgroundColor="#0a0e1a"
+            SelectedTabColor="#00BFFF"
+            UnselectedTabColor="#666">
+
+        <ShellContent Title="Escanear"
+                      Icon="scan_icon.svg"
+                      ContentTemplate="{DataTemplate views:OTPDisplayPage}"
+                      Route="Scan" />
+
+        <ShellContent Title="Pendientes"
+                      Icon="sync_icon.svg"
+                      ContentTemplate="{DataTemplate views:PendingSyncPage}"
+                      Route="Pending" />
+
+        <ShellContent Title="Configuración"
+                      Icon="settings_icon.svg"
+                      ContentTemplate="{DataTemplate views:SettingsPage}"
+                      Route="Settings" />
+    </TabBar>
+
+</Shell>
