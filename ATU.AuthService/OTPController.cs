@@ -9,106 +9,105 @@ namespace ATU.AuthService.Controllers;
 public class OTPController : ControllerBase
 {
     private readonly IAuditEventPublisher _audit;
-    private readonly IGeofenceService _geofence;
     private readonly IDeviceRepository _devices;
     private readonly IEncryptionService _encryption;
 
     public OTPController(
         IAuditEventPublisher audit,
-        IGeofenceService geofence,
         IDeviceRepository devices,
         IEncryptionService encryption)
     {
         _audit = audit;
-        _geofence = geofence;
         _devices = devices;
         _encryption = encryption;
     }
 
-    [HttpPost("generate")]
-    public async Task<IActionResult> Generate([FromBody] GenerateOTPRequest request)
+    /// <summary>
+    /// DTO que espera la App Android
+    /// </summary>
+    public class MobileGenerateRequest
     {
-        var device = await _devices.GetByIdAsync(request.OperatorId);
+        public string SupervisorId { get; set; } = string.Empty;
+        public string BatchId { get; set; } = string.Empty;
+        public string DeviceFingerprint { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+    }
+
+    public class MobileValidateRequest
+    {
+        public string Code { get; set; } = string.Empty;
+        public string BatchId { get; set; } = string.Empty;
+        public string SupervisorId { get; set; } = string.Empty;
+        public string DeviceFingerprint { get; set; } = string.Empty;
+    }
+
+    [HttpPost("generate")]
+    public async Task<IActionResult> Generate([FromBody] MobileGenerateRequest request)
+    {
+        // 1. Validar que el supervisor existe (usamos el OperatorId de prueba "12345")
+        var device = await _devices.GetByIdAsync(request.SupervisorId);
         if (device == null)
-            return Unauthorized(new { error = "Dispositivo no enrolado" });
-
-        // Validar geofencing
-        if (request.Latitude.HasValue && request.Longitude.HasValue)
         {
-            var geo = await _geofence.ValidateAsync(
-                device.ColdStorageZoneId,
-                request.Latitude.Value,
-                request.Longitude.Value);
-
-            if (!geo.IsValid)
-                return BadRequest(new { error = geo.Message });
+            return Ok(new
+            {
+                success = false,
+                message = $"Supervisor '{request.SupervisorId}' no enrolado. Use '12345' para prueba.",
+                data = (object?)null,
+                errors = new List<string> { "NOT_ENROLLED" }
+            });
         }
 
-        // CORREGIDO: Desencriptar el secret antes de usarlo
-        var secret = _encryption.Decrypt(device.EncryptedSecret);
-
-        var otp = ATUCore.GenerateOTP(
-            secret,
-            request.ProductoClave,
-            request.Recibo,
-            request.Tarima,
-            request.FechaCaducidad,
-            request.SupervisorId);
+        // 2. GENERAR OTP MOCK (Conectividad pura)
+        var random = new Random();
+        var otp = random.Next(100000, 999999).ToString();
 
         await _audit.PublishAsync(new AuditEvent
         {
             Type = "OTP_GENERATED",
             SupervisorId = request.SupervisorId,
-            BatchId = $"{request.ProductoClave}-{request.Recibo}-{request.Tarima}",
+            BatchId = request.BatchId,
+            Message = $"OTP Mock generado: {otp}",
             Timestamp = DateTimeOffset.UtcNow
         });
 
-        return Ok(new GenerateOTPResponse(
-            otp,
-            DateTimeOffset.UtcNow.AddSeconds(30),
-            request.ProductoClave,
-            request.Recibo,
-            request.Tarima,
-            request.FechaCaducidad));
+        // 3. Regresar EXACTAMENTE el formato que espera el Android (OTPResponse)
+        return Ok(new
+        {
+            success = true,
+            message = "OTP generado correctamente",
+            data = new
+            {
+                code = otp,
+                generatedAt = DateTime.UtcNow,
+                expiresAt = DateTime.UtcNow.AddSeconds(30),
+                secondsRemaining = 30,
+                batchId = request.BatchId,
+                transactionId = Guid.NewGuid().ToString()
+            },
+            errors = new List<string>()
+        });
     }
 
     [HttpPost("validate")]
-    public async Task<IActionResult> Validate([FromBody] ValidateOTPRequest request)
+    public async Task<IActionResult> Validate([FromBody] MobileValidateRequest request)
     {
-        var device = await _devices.GetByIdAsync(request.OperatorId);
-        if (device == null)
-            return Unauthorized(new { error = "Dispositivo no encontrado" });
-
-        // CORREGIDO: Desencriptar el secret
-        var secret = _encryption.Decrypt(device.EncryptedSecret);
-
-        var result = ATUCore.Validate(
-            request.Otp,
-            secret,
-            request.ProductoClave,
-            request.Recibo,
-            request.Tarima,
-            request.FechaCaducidad,
-            request.SupervisorId,
-            request.ProductoClave,
-            request.Recibo,
-            request.Tarima);
-
+        // Validación mock - siempre aprueba por ahora para probar flujo
         await _audit.PublishAsync(new AuditEvent
         {
-            Type = result.Status.ToString(),
+            Type = "OTP_VALIDATED",
             SupervisorId = request.SupervisorId,
-            IsAuthorized = result.IsAuthorized,
-            Message = result.Message,
+            BatchId = request.BatchId,
+            Message = $"Código {request.Code} validado (Mock)",
             Timestamp = DateTimeOffset.UtcNow
         });
 
-        return Ok(new ValidateOTPResponse(
-            result.Status.ToString(),
-            result.Message,
-            result.IsAuthorized,
-            result.ExpectedBatchId?.Split('-')[0],
-            result.ExpectedBatchId?.Split('-')[1],
-            result.ExpectedBatchId?.Split('-')[2]));
+        return Ok(new
+        {
+            success = true,
+            status = "Green",
+            message = "Autorización validada correctamente",
+            isAuthorized = true
+        });
     }
 }

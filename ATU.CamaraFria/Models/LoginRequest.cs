@@ -1,4 +1,7 @@
-﻿namespace ATU.CamaraFria.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace ATU.CamaraFria.Models;
 
 public class LoginRequest
 {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -6,6 +7,8 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using ATU.CamaraFria.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Networking;
+using Microsoft.Maui.Storage;
 using Refit;
 
 namespace ATU.CamaraFria.Services;
@@ -94,13 +97,13 @@ public class ATUApiClient
         _logger = logger;
         _deviceFingerprint = fingerprintService.GetFingerprint();
 
-        var baseUrl = Preferences.Get(BASE_URL_KEY, "http://192.168.1.100:5001");
+        var baseUrl = Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5059");
 
         var settings = new RefitSettings
         {
             ContentSerializer = new SystemTextJsonContentSerializer(new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNameCaseInsensitive = true
             })
         };
 
@@ -115,7 +118,7 @@ public class ATUApiClient
         {
             ContentSerializer = new SystemTextJsonContentSerializer(new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNameCaseInsensitive = true
             })
         };
         _api = RestService.For<IATUApi>(url, settings);

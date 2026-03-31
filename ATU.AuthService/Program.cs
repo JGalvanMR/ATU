@@ -1,9 +1,9 @@
+using ATU.AuthService;
 using ATU.Shared;
 using ATU.Shared.Models;
-using ATU.AuthService.Controllers;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +11,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// ==========================================
+// CORS: Permitir que el celular acceda
+// ==========================================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalNetwork", policy =>
+    {
+        policy.AllowAnyOrigin()    // En desarrollo, permitir cualquier IP de la red local
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Servicios ATU
 builder.Services.AddSingleton<IZoneRepository, ZoneRepository>();
@@ -29,73 +42,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// IMPORTANTE: CORS debe ir antes que los controllers
+app.UseCors("AllowLocalNetwork");
+
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
-// Mapear Controllers
 app.MapControllers();
 
-// Endpoints adicionales de prueba (Minimal API)
-app.MapGet("/api/geofence/test/{zoneId}", async (
-    string zoneId,
-    double lat,
-    double lon,
-    IGeofenceService geofence) =>
-{
-    var result = await geofence.ValidateAsync(zoneId, lat, lon);
-    return Results.Ok(new
-    {
-        result.IsValid,
-        result.Message,
-        result.DistanceMeters
-    });
-})
-.WithName("TestGeofence")
-.WithOpenApi();
-
-app.MapGet("/health", () => Results.Ok(new { status = "OK", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
 
 app.Run();
 
 // ============================================================================
-// IMPLEMENTACIONES
+// IMPLEMENTACIONES IN MEMORY
 // ============================================================================
-
-public class ZoneRepository : IZoneRepository
-{
-    private static readonly Dictionary<string, LoadingZone> _zones = new()
-    {
-        ["CAMARA-FRIA-PRINCIPAL"] = new LoadingZone
-        {
-            Id = "CAMARA-FRIA-PRINCIPAL",
-            Name = "Cámara Fría Principal",
-            BoundaryPoints = new[]
-            {
-                new GeoPoint(20.6721, -103.3475),
-                new GeoPoint(20.6725, -103.3475),
-                new GeoPoint(20.6725, -103.3470),
-                new GeoPoint(20.6721, -103.3470)
-            }
-        }
-    };
-
-    public Task<LoadingZone?> GetByIdAsync(string zoneId)
-    {
-        _zones.TryGetValue(zoneId.ToUpperInvariant(), out var zone);
-        return Task.FromResult(zone);
-    }
-}
-
-public class GeofenceService : IGeofenceService
-{
-    public Task<GeofenceResult> ValidateAsync(string zoneId, double latitude, double longitude)
-    {
-        return Task.FromResult(new GeofenceResult(
-            isValid: true,
-            distanceMeters: 0,
-            message: $"Zona {zoneId} válida"));
-    }
-}
 
 public class InMemoryOtpRepository : IOtpRepository
 {
@@ -119,9 +80,10 @@ public class InMemoryDeviceRepository : IDeviceRepository
             _devices.Add(new EnrolledDevice
             {
                 Id = Guid.NewGuid(),
-                OperatorId = "SUP-CAMARAS-001",
+                OperatorId = "12345", // ID de prueba que usarás en la app
                 Fingerprint = "test-fingerprint",
-                EncryptedSecret = Convert.ToBase64String(Encoding.UTF8.GetBytes("test-secret-32-chars-long!!")),
+                // SIN encriptación para la prueba de conectividad
+                EncryptedSecret = Convert.ToBase64String(Encoding.UTF8.GetBytes("SUPER_SECRET_KEY_32_CHARS!!")),
                 PushToken = "",
                 ColdStorageZoneId = "CAMARA-FRIA-PRINCIPAL",
                 IsActive = true
@@ -143,18 +105,20 @@ public class InMemoryAuditPublisher : IAuditEventPublisher
 {
     public Task PublishAsync(AuditEvent evt)
     {
-        Console.WriteLine($"[AUDIT] {evt.Type}: {evt.BatchId}");
+        Console.WriteLine($"[AUDIT] {evt.Type}: {evt.BatchId} - {evt.Message}");
         return Task.CompletedTask;
     }
 }
 
+// Encripción temporal con llave ESTÁTICA para que no explote al reiniciar
 public class AesEncryptionService : IEncryptionService
 {
-    private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
+    // Llave estática fija de 32 bytes
+    private static readonly byte[] _key = Encoding.UTF8.GetBytes("SUPER_SECRET_KEY_32_CHARS!!");
 
     public string Encrypt(string plaintext)
     {
-        using var aes = System.Security.Cryptography.Aes.Create();
+        using var aes = Aes.Create();
         aes.Key = _key;
         aes.GenerateIV();
         var iv = aes.IV;
@@ -170,7 +134,7 @@ public class AesEncryptionService : IEncryptionService
     public string Decrypt(string ciphertext)
     {
         var data = Convert.FromBase64String(ciphertext);
-        using var aes = System.Security.Cryptography.Aes.Create();
+        using var aes = Aes.Create();
         aes.Key = _key;
         aes.IV = data.Take(16).ToArray();
         using var decryptor = aes.CreateDecryptor();

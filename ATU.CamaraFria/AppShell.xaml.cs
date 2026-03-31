@@ -1,4 +1,7 @@
-﻿namespace ATU.CamaraFria
+﻿
+using Microsoft.Maui.Controls;
+
+namespace ATU.CamaraFria
 {
     public partial class AppShell : Shell
     {

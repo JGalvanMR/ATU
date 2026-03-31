@@ -7,6 +7,9 @@ using ATU.CamaraFria.Models;
 using ATU.CamaraFria.Services;
 using Microsoft.Extensions.Logging;
 using ZXing.Net.Maui;
+using Microsoft.Maui.Storage;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Devices;
 
 namespace ATU.CamaraFria.ViewModels;
 
@@ -163,7 +166,7 @@ public partial class OTPViewModel : BaseViewModel
         {
             var request = new OTPRequest
             {
-                SupervisorId = _supervisorId,
+                SupervisorId = SupervisorId,
                 BatchId = BatchId,
                 LabelData = _lastScanData
             };

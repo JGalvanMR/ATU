@@ -1,4 +1,8 @@
-﻿namespace ATU.CamaraFria
+﻿using Microsoft.Maui.Accessibility;
+using Microsoft.Maui.Controls;
+using System;
+
+namespace ATU.CamaraFria
 {
     public partial class MainPage : ContentPage
     {

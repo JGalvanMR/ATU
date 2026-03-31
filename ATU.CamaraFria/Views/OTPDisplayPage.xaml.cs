@@ -1,5 +1,8 @@
 using System;
 using ATU.CamaraFria.ViewModels;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Networking;
 using ZXing.Net.Maui;
 
 namespace ATU.CamaraFria.Views;

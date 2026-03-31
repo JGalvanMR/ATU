@@ -39,17 +39,17 @@ public class SyncQueueService
 {
     private readonly SyncDbContext _db;
     private readonly ILogger<SyncQueueService> _logger;
-    private readonly ATUApiClient _apiClient;
+    private readonly IServiceProvider _serviceProvider;
     private readonly SemaphoreSlim _syncLock = new(1, 1);
 
     public SyncQueueService(
         SyncDbContext db,
         ILogger<SyncQueueService> logger,
-        ATUApiClient apiClient)
+        IServiceProvider serviceProvider)
     {
         _db = db;
         _logger = logger;
-        _apiClient = apiClient;
+        _serviceProvider = serviceProvider;
 
         _db.Database.EnsureCreated();
     }
@@ -189,20 +189,24 @@ public class SyncQueueService
 
     private async Task<bool> ProcessItemAsync(PendingSync item)
     {
+        // Se obtiene AQUÍ para romper la dependencia circular
+        var apiClient = _serviceProvider.GetService<ATUApiClient>();
+        if (apiClient == null) return false;
+
         switch (item.Type)
         {
             case SyncType.OTPGeneration:
                 var request = System.Text.Json.JsonSerializer.Deserialize<OTPRequest>(item.Payload);
                 if (request == null) return false;
 
-                var response = await _apiClient.GenerateOTPAsync(request);
+                var response = await apiClient.GenerateOTPAsync(request);
                 return response?.Success ?? false;
 
             case SyncType.Login:
                 var loginRequest = System.Text.Json.JsonSerializer.Deserialize<LoginRequest>(item.Payload);
                 if (loginRequest == null) return false;
 
-                var loginResponse = await _apiClient.LoginAsync(loginRequest);
+                var loginResponse = await apiClient.LoginAsync(loginRequest);
                 return loginResponse?.Success ?? false;
 
             case SyncType.DeviceEnrollment:

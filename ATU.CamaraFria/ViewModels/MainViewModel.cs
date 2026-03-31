@@ -3,6 +3,9 @@ using ATU.CamaraFria.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Networking;
+using Microsoft.Maui.Storage;
 using System;
 using System.Threading.Tasks;
 

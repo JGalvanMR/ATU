@@ -21,12 +21,13 @@
 
 	<application
         android:allowBackup="true"
-        android:icon="@mipmap/appicon"
+        android:icon="@android:mipmap/sym_def_app_icon"
         android:label="ATU Cámara Fría"
-        android:roundIcon="@mipmap/appicon_round"
+        android:roundIcon="@android:mipmap/sym_def_app_icon"
         android:supportsRtl="true"
         android:theme="@style/Maui.SplashTheme"
-        android:hardwareAccelerated="true">
+        android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="true">
 
 		<!-- Habilitar cleartext para red local HTTP -->
 		<uses-library

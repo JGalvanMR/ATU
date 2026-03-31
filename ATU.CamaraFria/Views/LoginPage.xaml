@@ -1,141 +1,150 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:viewmodel="clr-namespace:ATU.CamaraFria.ViewModels"
-             x:Class="ATU.CamaraFria.Views.LoginPage"
-             x:DataType="viewmodel:LoginViewModel"
-             BackgroundColor="#070B18">
+<ContentPage
+    x:Class="ATU.CamaraFria.Views.LoginPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodel="clr-namespace:ATU.CamaraFria.ViewModels"
+    x:DataType="viewmodel:LoginViewModel"
+    BackgroundColor="#070B18">
 
-    <Grid RowDefinitions="*,Auto,*,Auto,*">
+    <ScrollView>
+        <Grid
+            Padding="20"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+            VerticalOptions="Center">
 
-        <!--  Logo/Título  -->
-        <VerticalStackLayout Grid.Row="0"
-                             VerticalOptions="Center"
-                             HorizontalOptions="Center"
-                             Spacing="10">
-            <!--  Ícono de cámara fría  -->
-            <Border Padding="20"
+            <!--  Logo/Título  -->
+            <VerticalStackLayout
+                Grid.Row="0"
+                Margin="0,0,0,30"
+                Spacing="10">
+                <Border
+                    Padding="20"
                     BackgroundColor="#1a1f35"
+                    HorizontalOptions="Center"
                     Stroke="#00BFFF"
-                    StrokeThickness="2"
-                    StrokeShape="RoundRectangle 30">
-                <Image Source="freezer_icon.svg"
-                       WidthRequest="80"
-                       HeightRequest="80" />
-            </Border>
-
-            <Label Text="ATU Cámara Fría"
-                   FontSize="28"
-                   FontAttributes="Bold"
-                   TextColor="#00BFFF"
-                   HorizontalOptions="Center" />
-
-            <Label Text="Autorización Transaccional Única"
-                   FontSize="14"
-                   TextColor="#666"
-                   HorizontalOptions="Center" />
-        </VerticalStackLayout>
-
-        <!--  Formulario de Login  -->
-        <VerticalStackLayout Grid.Row="1"
-                             Padding="30,20"
-                             Spacing="15"
-                             HorizontalOptions="Fill">
-
-            <Label Text="Número de Empleado"
-                   FontSize="14"
-                   TextColor="#AAA" />
-
-            <Border BackgroundColor="#1a1f35"
-                    Stroke="#333"
-                    StrokeThickness="1"
-                    StrokeShape="RoundRectangle 10">
-                <Entry Margin="10,15"
-                       Text="{Binding EmployeeNumber}"
-                       Placeholder="Ej: 12345"
-                       PlaceholderColor="#555"
-                       TextColor="White"
-                       FontSize="24"
-                       HorizontalTextAlignment="Center"
-                       Keyboard="Numeric"
-                       MaxLength="10" />
-            </Border>
-
-            <!--  Configuración de servidor (desplegable)  -->
-            <Expander IsExpanded="{Binding ShowServerConfig}">
-                <Expander.Header>
-                    <Label Text="⚙️ Configuración de Servidor"
-                           TextColor="#666"
-                           FontSize="12" />
-                </Expander.Header>
-                <Border Padding="10"
-                        BackgroundColor="#1a1f35"
-                        Stroke="#333"
-                        StrokeShape="RoundRectangle 10">
-                    <Entry Text="{Binding ServerUrl}"
-                           Placeholder="http://192.168.1.100:5001"
-                           PlaceholderColor="#555"
-                           TextColor="#00BFFF"
-                           FontSize="14"
-                           Keyboard="Url" />
+                    StrokeShape="RoundRectangle 30"
+                    StrokeThickness="2">
+                    <Label
+                        FontSize="60"
+                        HorizontalOptions="Center"
+                        Text="❄️" />
                 </Border>
-            </Expander>
+
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="28"
+                    HorizontalOptions="Center"
+                    Text="ATU Cámara Fría"
+                    TextColor="#00BFFF" />
+
+                <Label
+                    FontSize="14"
+                    HorizontalOptions="Center"
+                    Text="Autorización Transaccional Única"
+                    TextColor="#666" />
+            </VerticalStackLayout>
+
+            <!--  Formulario  -->
+            <VerticalStackLayout Grid.Row="1" Spacing="15">
+                <Label
+                    FontSize="14"
+                    Text="Número de Empleado"
+                    TextColor="#AAA" />
+
+                <Border
+                    BackgroundColor="#1a1f35"
+                    Stroke="#333"
+                    StrokeShape="RoundRectangle 10"
+                    StrokeThickness="1">
+                    <Entry
+                        Margin="10,15"
+                        FontSize="24"
+                        HorizontalTextAlignment="Center"
+                        Keyboard="Numeric"
+                        MaxLength="10"
+                        Placeholder="Ej: 12345"
+                        PlaceholderColor="#555"
+                        Text="{Binding EmployeeNumber}"
+                        TextColor="White" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!--  Configuración de servidor  -->
+            <Grid
+                Grid.Row="2"
+                Margin="0,15,0,0"
+                RowDefinitions="Auto,Auto">
+                <Label
+                    Grid.Row="0"
+                    FontSize="12"
+                    HorizontalOptions="Center"
+                    Text="⚙️ Toca para cambiar URL del Servidor"
+                    TextColor="#666">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ToggleServerConfigCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <Border
+                    Grid.Row="1"
+                    Padding="10"
+                    BackgroundColor="#1a1f35"
+                    IsVisible="{Binding ShowServerConfig}"
+                    Stroke="#333"
+                    StrokeShape="RoundRectangle 10">
+                    <Entry
+                        FontSize="14"
+                        Keyboard="Url"
+                        Placeholder="http://192.168.1.100:5001"
+                        PlaceholderColor="#555"
+                        Text="{Binding ServerUrl}"
+                        TextColor="#00BFFF" />
+                </Border>
+            </Grid>
 
             <!--  Botón Login  -->
-            <Button Text="Iniciar Sesión"
-                    Command="{Binding LoginCommand}"
-                    BackgroundColor="#00BFFF"
-                    TextColor="Black"
-                    FontSize="18"
-                    FontAttributes="Bold"
-                    HeightRequest="55"
-                    CornerRadius="10"
-                    IsEnabled="{Binding IsNotBusy}">
-                <Button.VisualStateManager.VisualStateGroups>
-                    <VisualStateGroup Name="CommonStates">
-                        <VisualState Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="#00BFFF" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState Name="Disabled">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="#333" />
-                                <Setter Property="TextColor" Value="#666" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </Button.VisualStateManager.VisualStateGroups>
-            </Button>
+            <Button
+                Grid.Row="3"
+                Margin="0,20,0,0"
+                BackgroundColor="#00BFFF"
+                Command="{Binding LoginCommand}"
+                CornerRadius="10"
+                FontAttributes="Bold"
+                FontSize="18"
+                HeightRequest="55"
+                IsEnabled="{Binding IsNotBusy}"
+                Text="Iniciar Sesión"
+                TextColor="Black" />
 
-            <!--  Indicador de carga  -->
-            <ActivityIndicator IsRunning="{Binding IsBusy}"
-                               IsVisible="{Binding IsBusy}"
-                               Color="#00BFFF" />
+            <!--  Indicador de carga y errores  -->
+            <VerticalStackLayout Grid.Row="4" Spacing="10">
+                <ActivityIndicator
+                    IsRunning="{Binding IsBusy}"
+                    IsVisible="{Binding IsBusy}"
+                    Color="#00BFFF" />
 
-            <!--  Mensaje de error  -->
-            <Label Text="{Binding ErrorMessage}"
-                   TextColor="#FF4444"
-                   FontSize="14"
-                   LineBreakMode="WordWrap"
-                   IsVisible="{Binding HasError}" />
-        </VerticalStackLayout>
+                <Label
+                    FontSize="14"
+                    IsVisible="{Binding HasError}"
+                    LineBreakMode="WordWrap"
+                    Text="{Binding ErrorMessage}"
+                    TextColor="#FF4444" />
 
-        <!--  Info de biometría  -->
-        <Label Grid.Row="2"
-               Text="🔒 Se requerirá autenticación biométrica"
-               FontSize="12"
-               TextColor="#666"
-               HorizontalOptions="Center"
-               VerticalOptions="Center" />
+                <Label
+                    Margin="0,20,0,0"
+                    FontSize="12"
+                    HorizontalOptions="Center"
+                    Text="🔒 Se requerirá autenticación biométrica"
+                    TextColor="#666" />
 
-        <!--  Versión  -->
-        <Label Grid.Row="4"
-               Margin="0,20"
-               Text="v1.0.0 | ATU Core"
-               FontSize="10"
-               TextColor="#444"
-               HorizontalOptions="Center"
-               VerticalOptions="End" />
-    </Grid>
+                <Label
+                    FontSize="10"
+                    HorizontalOptions="Center"
+                    Text="v1.0.0 | ATU Core"
+                    TextColor="#444" />
+            </VerticalStackLayout>
+
+        </Grid>
+    </ScrollView>
 </ContentPage>

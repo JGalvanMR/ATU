@@ -1,8 +1,11 @@
 {
   "profiles": {
-    "Windows Machine": {
-      "commandName": "MsixPackage",
-      "nativeDebugging": false
+    "ATU.CamaraFria": {
+      "commandName": "Project",
+      "targetFramework": "net10.0-android",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
     }
   }
 }

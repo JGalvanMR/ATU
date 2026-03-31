@@ -1,4 +1,6 @@
-﻿namespace ATU.CamaraFria.Models;
+﻿using System;
+
+namespace ATU.CamaraFria.Models;
 
 /// <summary>
 /// Registro pendiente de sincronización para modo offline

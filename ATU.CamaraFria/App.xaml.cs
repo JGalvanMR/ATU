@@ -2,6 +2,12 @@
 using ATU.CamaraFria.Services;
 using ATU.CamaraFria.Views;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Devices;
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Networking;
+using Microsoft.Maui.Storage;
 
 namespace ATU.CamaraFria;
 
@@ -9,7 +15,6 @@ public partial class App : Application
 {
     private readonly IServiceProvider _services;
 
-    // Inyectar IServiceProvider en .NET 10
     public App(IServiceProvider services)
     {
         InitializeComponent();
@@ -18,27 +23,53 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var hasSession = !string.IsNullOrEmpty(Preferences.Get("AUTH_TOKEN", string.Empty));
+        try
+        {
+            var hasSession = !string.IsNullOrEmpty(Preferences.Get("AUTH_TOKEN", string.Empty));
 
-        if (hasSession)
-        {
-            return new Window(new AppShell());
+            if (hasSession)
+            {
+                return new Window(new AppShell());
+            }
+            else
+            {
+                return new Window(new NavigationPage(_services.GetRequiredService<LoginPage>()));
+            }
         }
-        else
+        catch (Exception ex)
         {
-            return new Window(new NavigationPage(new LoginPage()));
+            return new Window(new ContentPage
+            {
+                BackgroundColor = Colors.DarkRed,
+                Content = new ScrollView
+                {
+                    Content = new Label
+                    {
+                        Text = $"🔥 ERROR AL INICIAR:\n\n{ex.Message}\n\n--- DETALLES ---\n{ex.StackTrace}",
+                        TextColor = Colors.White,
+                        FontSize = 14,
+                        Margin = 20
+                    }
+                }
+            });
         }
     }
 
     protected override void OnStart()
     {
-        base.OnStart();
-
-        // Usar _services en lugar de this.Services
-        var syncQueue = _services.GetService<SyncQueueService>();
-        if (syncQueue != null && Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+        try
         {
-            _ = syncQueue.ProcessQueueAsync();
+            base.OnStart();
+
+            var syncQueue = _services.GetService<SyncQueueService>();
+            if (syncQueue != null && Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+            {
+                _ = syncQueue.ProcessQueueAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error en OnStart: {ex.Message}");
         }
     }
 }

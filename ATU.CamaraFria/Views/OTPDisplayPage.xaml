@@ -1,326 +1,370 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:viewmodel="clr-namespace:ATU.CamaraFria.ViewModels"
-             x:Class="ATU.CamaraFria.Views.OTPDisplayPage"
-             x:DataType="viewmodel:OTPViewModel"
-             BackgroundColor="#070B18">
+<ContentPage
+    x:Class="ATU.CamaraFria.Views.OTPDisplayPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodel="clr-namespace:ATU.CamaraFria.ViewModels"
+    x:DataType="viewmodel:OTPViewModel"
+    BackgroundColor="#070B18">
 
     <Grid RowDefinitions="Auto,*,Auto,Auto,Auto">
 
         <!--  Header con estado de conexión  -->
-        <Grid Grid.Row="0"
-              Padding="15"
-              ColumnDefinitions="*,Auto">
-            <Label Grid.Column="0"
-                   Text="ATU Cámara Fría"
-                   FontSize="18"
-                   FontAttributes="Bold"
-                   TextColor="#00BFFF"
-                   VerticalOptions="Center" />
+        <Grid
+            Grid.Row="0"
+            Padding="15"
+            ColumnDefinitions="*,Auto">
+            <Label
+                Grid.Column="0"
+                FontAttributes="Bold"
+                FontSize="18"
+                Text="ATU Cámara Fría"
+                TextColor="#00BFFF"
+                VerticalOptions="Center" />
 
             <!--  Indicador de conexión (se actualiza desde code-behind)  -->
-            <Border x:Name="ConnectionIndicator"
-                    Grid.Column="1"
-                    BackgroundColor="#44FF44"
-                    StrokeShape="Circle"
-                    WidthRequest="12"
-                    HeightRequest="12" />
+            <Border
+                x:Name="ConnectionIndicator"
+                Grid.Column="1"
+                BackgroundColor="#44FF44"
+                HeightRequest="12"
+                StrokeShape="Circle"
+                WidthRequest="12" />
         </Grid>
 
         <!--  ZONA ESCANEO  -->
-        <VerticalStackLayout Grid.Row="1"
-                             Padding="30"
-                             IsVisible="{Binding ShowScan}"
-                             VerticalOptions="Center"
-                             HorizontalOptions="Center"
-                             Spacing="20">
+        <VerticalStackLayout
+            Grid.Row="1"
+            Padding="30"
+            HorizontalOptions="Center"
+            IsVisible="{Binding ShowScan}"
+            Spacing="20"
+            VerticalOptions="Center">
 
             <!--  Área de escaneo visual  -->
-            <Border BackgroundColor="Transparent"
-                    Stroke="#00BFFF"
-                    StrokeThickness="3"
-                    StrokeDashArray="5,5"
-                    WidthRequest="280"
-                    HeightRequest="280"
-                    StrokeShape="RoundRectangle 20">
+            <Border
+                BackgroundColor="Transparent"
+                HeightRequest="280"
+                Stroke="#00BFFF"
+                StrokeDashArray="5,5"
+                StrokeShape="RoundRectangle 20"
+                StrokeThickness="3"
+                WidthRequest="280">
                 <Grid>
-                    <Image Source="qr_scan_icon.svg"
-                           WidthRequest="100"
-                           HeightRequest="100"
-                           Opacity="0.5" />
+                    <Image
+                        HeightRequest="100"
+                        Opacity="0.5"
+                        Source="qr_scan_icon.svg"
+                        WidthRequest="100" />
 
                     <!--  Esquinas decorativas  -->
-                    <Border Margin="-1,-1,0,0"
-                            BackgroundColor="#00BFFF"
-                            StrokeShape="RoundRectangle 5"
-                            WidthRequest="30"
-                            HeightRequest="30"
-                            HorizontalOptions="Start"
-                            VerticalOptions="Start" />
-                    <Border Margin="0,-1,-1,0"
-                            BackgroundColor="#00BFFF"
-                            StrokeShape="RoundRectangle 5"
-                            WidthRequest="30"
-                            HeightRequest="30"
-                            HorizontalOptions="End"
-                            VerticalOptions="Start" />
-                    <Border Margin="-1,0,0,-1"
-                            BackgroundColor="#00BFFF"
-                            StrokeShape="RoundRectangle 5"
-                            WidthRequest="30"
-                            HeightRequest="30"
-                            HorizontalOptions="Start"
-                            VerticalOptions="End" />
-                    <Border Margin="0,0,-1,-1"
-                            BackgroundColor="#00BFFF"
-                            StrokeShape="RoundRectangle 5"
-                            WidthRequest="30"
-                            HeightRequest="30"
-                            HorizontalOptions="End"
-                            VerticalOptions="End" />
+                    <Border
+                        Margin="-1,-1,0,0"
+                        BackgroundColor="#00BFFF"
+                        HeightRequest="30"
+                        HorizontalOptions="Start"
+                        StrokeShape="RoundRectangle 5"
+                        VerticalOptions="Start"
+                        WidthRequest="30" />
+                    <Border
+                        Margin="0,-1,-1,0"
+                        BackgroundColor="#00BFFF"
+                        HeightRequest="30"
+                        HorizontalOptions="End"
+                        StrokeShape="RoundRectangle 5"
+                        VerticalOptions="Start"
+                        WidthRequest="30" />
+                    <Border
+                        Margin="-1,0,0,-1"
+                        BackgroundColor="#00BFFF"
+                        HeightRequest="30"
+                        HorizontalOptions="Start"
+                        StrokeShape="RoundRectangle 5"
+                        VerticalOptions="End"
+                        WidthRequest="30" />
+                    <Border
+                        Margin="0,0,-1,-1"
+                        BackgroundColor="#00BFFF"
+                        HeightRequest="30"
+                        HorizontalOptions="End"
+                        StrokeShape="RoundRectangle 5"
+                        VerticalOptions="End"
+                        WidthRequest="30" />
                 </Grid>
             </Border>
 
             <!--  Status message  -->
-            <Label Text="{Binding StatusMessage}"
-                   TextColor="{Binding StatusColor}"
-                   FontSize="16"
-                   HorizontalOptions="Center"
-                   LineBreakMode="WordWrap" />
+            <Label
+                FontSize="16"
+                HorizontalOptions="Center"
+                LineBreakMode="WordWrap"
+                Text="{Binding StatusMessage}"
+                TextColor="{Binding StatusColor}" />
 
             <!--  Manual entry option  -->
-            <Label Text="───────── O ingrese manualmente ─────────"
-                   TextColor="#444"
-                   FontSize="12"
-                   HorizontalOptions="Center" />
+            <Label
+                FontSize="12"
+                HorizontalOptions="Center"
+                Text="───────── O ingrese manualmente ─────────"
+                TextColor="#444" />
 
-            <Border BackgroundColor="#1a1f35"
-                    Stroke="#333"
-                    StrokeShape="RoundRectangle 10">
-                <Entry Margin="10,12"
-                       Text="{Binding ScannedCode}"
-                       Placeholder="Código de lote"
-                       PlaceholderColor="#555"
-                       TextColor="White"
-                       FontSize="18"
-                       HorizontalTextAlignment="Center"
-                       ReturnCommand="{Binding ProcessScannedCodeCommand}"
-                       Completed="OnEntryCompleted" />
+            <Border
+                BackgroundColor="#1a1f35"
+                Stroke="#333"
+                StrokeShape="RoundRectangle 10">
+                <Entry
+                    Margin="10,12"
+                    Completed="OnEntryCompleted"
+                    FontSize="18"
+                    HorizontalTextAlignment="Center"
+                    Placeholder="Código de lote"
+                    PlaceholderColor="#555"
+                    ReturnCommand="{Binding ProcessScannedCodeCommand}"
+                    Text="{Binding ScannedCode}"
+                    TextColor="White" />
             </Border>
 
-            <Button Text="Procesar Código"
-                    Command="{Binding ProcessScannedCodeCommand}"
-                    BackgroundColor="#00BFFF"
-                    TextColor="Black"
-                    FontSize="16"
-                    FontAttributes="Bold"
-                    HeightRequest="50"
-                    CornerRadius="10"
-                    IsEnabled="{Binding IsNotBusy}" />
+            <Button
+                BackgroundColor="#00BFFF"
+                Command="{Binding ProcessScannedCodeCommand}"
+                CornerRadius="10"
+                FontAttributes="Bold"
+                FontSize="16"
+                HeightRequest="50"
+                IsEnabled="{Binding IsNotBusy}"
+                Text="Procesar Código"
+                TextColor="Black" />
         </VerticalStackLayout>
 
         <!--  ZONA OTP CON COUNTDOWN  -->
-        <Grid Grid.Row="1"
-              IsVisible="{Binding ShowOTP}"
-              RowDefinitions="Auto,*,Auto,Auto,Auto"
-              VerticalOptions="Center">
+        <Grid
+            Grid.Row="1"
+            IsVisible="{Binding ShowOTP}"
+            RowDefinitions="Auto,*,Auto,Auto,Auto"
+            VerticalOptions="Center">
 
             <!--  Info del lote  -->
-            <Border Grid.Row="0"
-                    Margin="20,0"
-                    Padding="15"
-                    BackgroundColor="#1a1f35"
-                    Stroke="#333"
-                    StrokeShape="RoundRectangle 10">
+            <Border
+                Grid.Row="0"
+                Margin="20,0"
+                Padding="15"
+                BackgroundColor="#1a1f35"
+                Stroke="#333"
+                StrokeShape="RoundRectangle 10">
                 <Grid ColumnDefinitions="Auto,*">
-                    <Label Grid.Column="0"
-                           Text="📦 Lote:"
-                           TextColor="#AAA"
-                           FontSize="14"
-                           VerticalOptions="Center" />
-                    <Label Grid.Column="1"
-                           Text="{Binding BatchId}"
-                           TextColor="White"
-                           FontSize="18"
-                           FontAttributes="Bold"
-                           VerticalOptions="Center"
-                           HorizontalOptions="End" />
+                    <Label
+                        Grid.Column="0"
+                        FontSize="14"
+                        Text="📦 Lote:"
+                        TextColor="#AAA"
+                        VerticalOptions="Center" />
+                    <Label
+                        Grid.Column="1"
+                        FontAttributes="Bold"
+                        FontSize="18"
+                        HorizontalOptions="End"
+                        Text="{Binding BatchId}"
+                        TextColor="White"
+                        VerticalOptions="Center" />
                 </Grid>
             </Border>
 
             <!--  CÓDIGO OTP GRANDE  -->
-            <Border Grid.Row="1"
-                    Margin="20"
-                    Padding="20"
-                    BackgroundColor="#0f1428"
-                    Stroke="#00BFFF"
-                    StrokeThickness="3"
-                    StrokeShape="RoundRectangle 25">
-                <VerticalStackLayout HorizontalOptions="Center"
-                                     VerticalOptions="Center"
-                                     Spacing="10">
+            <Border
+                Grid.Row="1"
+                Margin="20"
+                Padding="20"
+                BackgroundColor="#0f1428"
+                Stroke="#00BFFF"
+                StrokeShape="RoundRectangle 25"
+                StrokeThickness="3">
+                <VerticalStackLayout
+                    HorizontalOptions="Center"
+                    Spacing="10"
+                    VerticalOptions="Center">
 
-                    <Label Text="CÓDIGO OTP"
-                           FontSize="14"
-                           TextColor="#666"
-                           HorizontalOptions="Center"
-                           LetterSpacing="5" />
+                    <Label
+                        FontSize="14"
+                        HorizontalOptions="Center"
+                        LetterSpacing="5"
+                        Text="CÓDIGO OTP"
+                        TextColor="#666" />
 
                     <!--  Código OTP con dígitos separados  -->
-                    <Grid ColumnDefinitions="*,*,*,*,*,*"
-                          ColumnSpacing="8"
-                          HorizontalOptions="Center">
-                        <Border Grid.Column="0"
-                                BackgroundColor="#1a1f35"
-                                Stroke="#00BFFF"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8"
-                                WidthRequest="55"
-                                HeightRequest="80">
-                            <Label Text="{Binding OtpCode[0]}"
-                                   FontSize="48"
-                                   FontAttributes="Bold"
-                                   TextColor="#00FF00"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                    <Grid
+                        ColumnDefinitions="*,*,*,*,*,*"
+                        ColumnSpacing="8"
+                        HorizontalOptions="Center">
+                        <Border
+                            Grid.Column="0"
+                            BackgroundColor="#1a1f35"
+                            HeightRequest="80"
+                            Stroke="#00BFFF"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
+                            WidthRequest="55">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="48"
+                                HorizontalOptions="Center"
+                                Text="{Binding OtpCode[0]}"
+                                TextColor="#00FF00"
+                                VerticalOptions="Center" />
                         </Border>
-                        <Border Grid.Column="1"
-                                BackgroundColor="#1a1f35"
-                                Stroke="#00BFFF"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8"
-                                WidthRequest="55"
-                                HeightRequest="80">
-                            <Label Text="{Binding OtpCode[1]}"
-                                   FontSize="48"
-                                   FontAttributes="Bold"
-                                   TextColor="#00FF00"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                        <Border
+                            Grid.Column="1"
+                            BackgroundColor="#1a1f35"
+                            HeightRequest="80"
+                            Stroke="#00BFFF"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
+                            WidthRequest="55">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="48"
+                                HorizontalOptions="Center"
+                                Text="{Binding OtpCode[1]}"
+                                TextColor="#00FF00"
+                                VerticalOptions="Center" />
                         </Border>
-                        <Border Grid.Column="2"
-                                BackgroundColor="#1a1f35"
-                                Stroke="#00BFFF"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8"
-                                WidthRequest="55"
-                                HeightRequest="80">
-                            <Label Text="{Binding OtpCode[2]}"
-                                   FontSize="48"
-                                   FontAttributes="Bold"
-                                   TextColor="#00FF00"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                        <Border
+                            Grid.Column="2"
+                            BackgroundColor="#1a1f35"
+                            HeightRequest="80"
+                            Stroke="#00BFFF"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
+                            WidthRequest="55">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="48"
+                                HorizontalOptions="Center"
+                                Text="{Binding OtpCode[2]}"
+                                TextColor="#00FF00"
+                                VerticalOptions="Center" />
                         </Border>
-                        <Border Grid.Column="3"
-                                BackgroundColor="#1a1f35"
-                                Stroke="#00BFFF"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8"
-                                WidthRequest="55"
-                                HeightRequest="80">
-                            <Label Text="{Binding OtpCode[3]}"
-                                   FontSize="48"
-                                   FontAttributes="Bold"
-                                   TextColor="#00FF00"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                        <Border
+                            Grid.Column="3"
+                            BackgroundColor="#1a1f35"
+                            HeightRequest="80"
+                            Stroke="#00BFFF"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
+                            WidthRequest="55">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="48"
+                                HorizontalOptions="Center"
+                                Text="{Binding OtpCode[3]}"
+                                TextColor="#00FF00"
+                                VerticalOptions="Center" />
                         </Border>
-                        <Border Grid.Column="4"
-                                BackgroundColor="#1a1f35"
-                                Stroke="#00BFFF"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8"
-                                WidthRequest="55"
-                                HeightRequest="80">
-                            <Label Text="{Binding OtpCode[4]}"
-                                   FontSize="48"
-                                   FontAttributes="Bold"
-                                   TextColor="#00FF00"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                        <Border
+                            Grid.Column="4"
+                            BackgroundColor="#1a1f35"
+                            HeightRequest="80"
+                            Stroke="#00BFFF"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
+                            WidthRequest="55">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="48"
+                                HorizontalOptions="Center"
+                                Text="{Binding OtpCode[4]}"
+                                TextColor="#00FF00"
+                                VerticalOptions="Center" />
                         </Border>
-                        <Border Grid.Column="5"
-                                BackgroundColor="#1a1f35"
-                                Stroke="#00BFFF"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8"
-                                WidthRequest="55"
-                                HeightRequest="80">
-                            <Label Text="{Binding OtpCode[5]}"
-                                   FontSize="48"
-                                   FontAttributes="Bold"
-                                   TextColor="#00FF00"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center" />
+                        <Border
+                            Grid.Column="5"
+                            BackgroundColor="#1a1f35"
+                            HeightRequest="80"
+                            Stroke="#00BFFF"
+                            StrokeShape="RoundRectangle 8"
+                            StrokeThickness="1"
+                            WidthRequest="55">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="48"
+                                HorizontalOptions="Center"
+                                Text="{Binding OtpCode[5]}"
+                                TextColor="#00FF00"
+                                VerticalOptions="Center" />
                         </Border>
                     </Grid>
                 </VerticalStackLayout>
             </Border>
 
             <!--  COUNTDOWN TIMER  -->
-            <Border Grid.Row="2"
-                    Margin="40,10"
-                    Padding="15"
-                    BackgroundColor="#0f1428"
-                    Stroke="#FF4444"
-                    StrokeThickness="2"
-                    StrokeShape="RoundRectangle 15">
+            <Border
+                Grid.Row="2"
+                Margin="40,10"
+                Padding="15"
+                BackgroundColor="#0f1428"
+                Stroke="#FF4444"
+                StrokeShape="RoundRectangle 15"
+                StrokeThickness="2">
                 <Grid ColumnDefinitions="*,Auto,*">
-                    <Label Grid.Column="0"
-                           Text="⏱️ Expira en:"
-                           TextColor="#AAA"
-                           FontSize="16"
-                           VerticalOptions="Center"
-                           HorizontalOptions="End" />
-                    <Label Grid.Column="1"
-                           Margin="15,0"
-                           Text="{Binding CountdownText}"
-                           FontSize="36"
-                           FontAttributes="Bold"
-                           TextColor="#FF4444"
-                           VerticalOptions="Center"
-                           HorizontalOptions="Center" />
+                    <Label
+                        Grid.Column="0"
+                        FontSize="16"
+                        HorizontalOptions="End"
+                        Text="⏱️ Expira en:"
+                        TextColor="#AAA"
+                        VerticalOptions="Center" />
+                    <Label
+                        Grid.Column="1"
+                        Margin="15,0"
+                        FontAttributes="Bold"
+                        FontSize="36"
+                        HorizontalOptions="Center"
+                        Text="{Binding CountdownText}"
+                        TextColor="#FF4444"
+                        VerticalOptions="Center" />
                 </Grid>
             </Border>
 
             <!--  Status message OTP  -->
-            <Label Grid.Row="3"
-                   Margin="0,15"
-                   Text="{Binding StatusMessage}"
-                   TextColor="{Binding StatusColor}"
-                   FontSize="16"
-                   HorizontalOptions="Center" />
+            <Label
+                Grid.Row="3"
+                Margin="0,15"
+                FontSize="16"
+                HorizontalOptions="Center"
+                Text="{Binding StatusMessage}"
+                TextColor="{Binding StatusColor}" />
 
             <!--  Botón Nuevo Escaneo  -->
-            <Button Grid.Row="4"
-                    Margin="20,10"
-                    Text="🔄 Escanear Nuevo Lote"
-                    Command="{Binding ResetScanCommand}"
-                    BackgroundColor="#333"
-                    TextColor="White"
-                    FontSize="16"
-                    HeightRequest="50"
-                    CornerRadius="10" />
+            <Button
+                Grid.Row="4"
+                Margin="20,10"
+                BackgroundColor="#333"
+                Command="{Binding ResetScanCommand}"
+                CornerRadius="10"
+                FontSize="16"
+                HeightRequest="50"
+                Text="🔄 Escanear Nuevo Lote"
+                TextColor="White" />
         </Grid>
 
         <!--  Bottom Bar con info  -->
-        <Border Grid.Row="4"
-                Padding="15,10"
-                BackgroundColor="#0a0e1a">
+        <Border
+            Grid.Row="4"
+            Padding="15,10"
+            BackgroundColor="#0a0e1a">
             <Grid ColumnDefinitions="*,Auto">
-                <Label Grid.Column="0"
-                       Text="🔒 Cada código es único y está vinculado al lote"
-                       TextColor="#444"
-                       FontSize="11"
-                       VerticalOptions="Center" />
+                <Label
+                    Grid.Column="0"
+                    FontSize="11"
+                    Text="🔒 Cada código es único y está vinculado al lote"
+                    TextColor="#444"
+                    VerticalOptions="Center" />
 
-                <Label Grid.Column="1"
-                       Text="v1.0"
-                       TextColor="#333"
-                       FontSize="10"
-                       VerticalOptions="Center" />
+                <Label
+                    Grid.Column="1"
+                    FontSize="10"
+                    Text="v1.0"
+                    TextColor="#333"
+                    VerticalOptions="Center" />
             </Grid>
         </Border>
     </Grid>

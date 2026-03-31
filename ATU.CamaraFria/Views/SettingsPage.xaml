@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ATU.CamaraFria.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="#070B18">
+
+    <Grid Padding="20" RowDefinitions="Auto,*">
+        <Label
+            Grid.Row="0"
+            Margin="0,20,0,20"
+            FontAttributes="Bold"
+            FontSize="24"
+            Text="Configuración"
+            TextColor="#00BFFF" />
+
+        <Label
+            Grid.Row="1"
+            FontSize="16"
+            HorizontalOptions="Center"
+            Text="Pantalla en desarrollo..."
+            TextColor="#666"
+            VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

@@ -1,4 +1,6 @@
-﻿namespace ATU.CamaraFria.Models;
+﻿using System;
+
+namespace ATU.CamaraFria.Models;
 
 public class OTPRequest
 {
