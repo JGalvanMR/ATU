@@ -13,7 +13,7 @@ public class OtpRecord
     public string ProductoClave { get; set; } = string.Empty;
     public string Recibo { get; set; } = string.Empty;
     public string Tarima { get; set; } = string.Empty;
-    public string BatchId => $"{ProductoClave}-{Recibo}-{Tarima}";
+    public string BatchId { get; set; } = string.Empty;
     public string SupervisorId { get; set; } = string.Empty;
     public string OperatorId { get; set; } = string.Empty;  // IMEI/Dispositivo
     public DateTimeOffset GeneratedAt { get; set; }
@@ -55,6 +55,7 @@ public interface IOtpRepository
     Task<OtpRecord?> GetByBatchAndSupervisorAsync(string batchId, string supervisorId);
     Task UpdateAsync(OtpRecord record);
     Task<OtpRecord?> GetByOtpAsync(string otp);
+    Task<OtpRecord?> GetPendingByBatchAsync(string batchId);
 }
 
 /// <summary>

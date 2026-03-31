@@ -11,20 +11,20 @@ public class OTPController : ControllerBase
     private readonly IAuditEventPublisher _audit;
     private readonly IDeviceRepository _devices;
     private readonly IEncryptionService _encryption;
+    private readonly IOtpRepository _otps;
 
     public OTPController(
         IAuditEventPublisher audit,
         IDeviceRepository devices,
-        IEncryptionService encryption)
+        IEncryptionService encryption,
+        IOtpRepository otps)
     {
         _audit = audit;
         _devices = devices;
         _encryption = encryption;
+        _otps = otps;
     }
 
-    /// <summary>
-    /// DTO que espera la App Android
-    /// </summary>
     public class MobileGenerateRequest
     {
         public string SupervisorId { get; set; } = string.Empty;
@@ -45,33 +45,34 @@ public class OTPController : ControllerBase
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromBody] MobileGenerateRequest request)
     {
-        // 1. Validar que el supervisor existe (usamos el OperatorId de prueba "12345")
         var device = await _devices.GetByIdAsync(request.SupervisorId);
         if (device == null)
-        {
-            return Ok(new
-            {
-                success = false,
-                message = $"Supervisor '{request.SupervisorId}' no enrolado. Use '12345' para prueba.",
-                data = (object?)null,
-                errors = new List<string> { "NOT_ENROLLED" }
-            });
-        }
+            return Ok(new { success = false, message = $"Supervisor '{request.SupervisorId}' no enrolado.", data = (object?)null, errors = new[] { "NOT_ENROLLED" } });
 
-        // 2. GENERAR OTP MOCK (Conectividad pura)
-        var random = new Random();
-        var otp = random.Next(100000, 999999).ToString();
+        var secret = _encryption.Decrypt(device.EncryptedSecret);
+        var otp = ATUCore.GenerateOTP(secret, request.BatchId, "", request.SupervisorId);
+
+        var record = new OtpRecord
+        {
+            Otp = otp,
+            BatchId = request.BatchId,
+            SupervisorId = request.SupervisorId,
+            OperatorId = request.SupervisorId,
+            GeneratedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(ATUCore.TtlSeconds),
+            IsUsed = false
+        };
+        await _otps.SaveAsync(record);
 
         await _audit.PublishAsync(new AuditEvent
         {
             Type = "OTP_GENERATED",
             SupervisorId = request.SupervisorId,
             BatchId = request.BatchId,
-            Message = $"OTP Mock generado: {otp}",
+            Message = $"OTP generado: {otp}",
             Timestamp = DateTimeOffset.UtcNow
         });
 
-        // 3. Regresar EXACTAMENTE el formato que espera el Android (OTPResponse)
         return Ok(new
         {
             success = true,
@@ -80,8 +81,8 @@ public class OTPController : ControllerBase
             {
                 code = otp,
                 generatedAt = DateTime.UtcNow,
-                expiresAt = DateTime.UtcNow.AddSeconds(30),
-                secondsRemaining = 30,
+                expiresAt = DateTime.UtcNow.AddSeconds(ATUCore.TtlSeconds),
+                secondsRemaining = ATUCore.TimeStepSeconds,
                 batchId = request.BatchId,
                 transactionId = Guid.NewGuid().ToString()
             },
@@ -92,13 +93,29 @@ public class OTPController : ControllerBase
     [HttpPost("validate")]
     public async Task<IActionResult> Validate([FromBody] MobileValidateRequest request)
     {
-        // Validación mock - siempre aprueba por ahora para probar flujo
+        var stored = await _otps.GetByBatchAndSupervisorAsync(request.BatchId, request.SupervisorId);
+        if (stored == null)
+            return Ok(new { success = false, status = "Red", message = "No hay OTP pendiente para este embarque.", isAuthorized = false });
+
+        if (stored.IsUsed)
+            return Ok(new { success = false, status = "Red", message = "OTP ya fue utilizado.", isAuthorized = false });
+
+        if (stored.ExpiresAt < DateTimeOffset.UtcNow)
+            return Ok(new { success = false, status = "Red", message = "OTP expirado. Solicite uno nuevo.", isAuthorized = false });
+
+        if (stored.Otp != request.Code)
+            return Ok(new { success = false, status = "Red", message = "Código incorrecto.", isAuthorized = false });
+
+        stored.IsUsed = true;
+        stored.UsedAt = DateTimeOffset.UtcNow;
+        await _otps.UpdateAsync(stored);
+
         await _audit.PublishAsync(new AuditEvent
         {
             Type = "OTP_VALIDATED",
             SupervisorId = request.SupervisorId,
             BatchId = request.BatchId,
-            Message = $"Código {request.Code} validado (Mock)",
+            Message = $"Código {request.Code} validado",
             Timestamp = DateTimeOffset.UtcNow
         });
 
@@ -107,7 +124,24 @@ public class OTPController : ControllerBase
             success = true,
             status = "Green",
             message = "Autorización validada correctamente",
-            isAuthorized = true
+            isAuthorized = true,
+            supervisorId = stored.SupervisorId
+        });
+    }
+
+    [HttpGet("pending")]
+    public async Task<IActionResult> Pending([FromQuery] string batchId)
+    {
+        var pending = await _otps.GetPendingByBatchAsync(batchId);
+        if (pending == null)
+            return Ok(new { success = false, message = "Sin OTP pendiente.", supervisorId = (string?)null });
+
+        return Ok(new
+        {
+            success = true,
+            message = "OTP pendiente encontrado",
+            supervisorId = pending.SupervisorId,
+            expiresAt = pending.ExpiresAt.DateTime
         });
     }
 }
