@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,44 +20,29 @@ public partial class OTPViewModel : BaseViewModel
     private readonly IScannerService _scannerService;
     private readonly ILogger<OTPViewModel> _logger;
 
-    [ObservableProperty]
-    private string _scannedCode = string.Empty;
+    // ── Propiedades observables ──────────────────────────────────────────────
 
-    [ObservableProperty]
-    private string _batchId = string.Empty;
+    [ObservableProperty] private string _scannedCode = string.Empty;
+    [ObservableProperty] private string _batchId = string.Empty;
+    [ObservableProperty] private string? _productName;
+    [ObservableProperty] private string _otpCode = string.Empty;
+    [ObservableProperty] private int _countdownSeconds;
+    [ObservableProperty] private string _countdownText = "00:30";
+    [ObservableProperty] private string _statusMessage = "Escanea la etiqueta verde del producto";
+    [ObservableProperty] private string _statusColor = "#FFFFFF";
+    [ObservableProperty] private bool _showOTP;
+    [ObservableProperty] private bool _showScan;
+    [ObservableProperty] private bool _isGenerating;
+    [ObservableProperty] private string _supervisorId = string.Empty;
 
-    [ObservableProperty]
-    private string? _productName;
-
-    [ObservableProperty]
-    private string _otpCode = string.Empty;
-
-    [ObservableProperty]
-    private int _countdownSeconds;
-
-    [ObservableProperty]
-    private string _countdownText = "00:30";
-
-    [ObservableProperty]
-    private string _statusMessage = "Escaneé la etiqueta verde del producto";
-
-    [ObservableProperty]
-    private string _statusColor = "#FFFFFF";
-
-    [ObservableProperty]
-    private bool _showOTP;
-
-    [ObservableProperty]
-    private bool _showScan;
-
-    [ObservableProperty]
-    private bool _isGenerating;
-
-    [ObservableProperty]
-    private string _supervisorId = string.Empty;
+    // Campos para flujo de folio adelantado (desde CargaEmbarques)
+    [ObservableProperty] private string _embFolio = string.Empty;
+    [ObservableProperty] private bool _esFolioAdelantado;
 
     private CancellationTokenSource? _countdownCts;
     private LabelScanData? _lastScanData;
+
+    // ── Constructor ──────────────────────────────────────────────────────────
 
     public OTPViewModel(
         ATUApiClient apiClient,
@@ -69,48 +55,59 @@ public partial class OTPViewModel : BaseViewModel
 
         _showScan = true;
         _showOTP = false;
-        _countdownSeconds = 30;
-
+        _countdownSeconds = ATUApiClient.OtpTtlSeconds;
         _supervisorId = Preferences.Get("SUPERVISOR_ID", string.Empty);
     }
 
-    /// <summary>
-    /// Callback desde la cámara - NO usa RelayCommand
-    /// </summary>
+    // ── Método público llamado desde la cámara (sin RelayCommand) ────────────
+
     public void OnBarcodeDetected(string code, BarcodeFormat format)
     {
         MainThread.BeginInvokeOnMainThread(async () =>
-        {
-            await ProcessCodeFromCameraAsync(code, format);
-        });
+            await ProcessCodeFromCameraAsync(code, format));
     }
 
-    /// <summary>
-    /// RelayCommand SIN parámetros - lee del Entry (ScannedCode)
-    /// </summary>
+    // ── Pre-cargar folio adelantado (llamado desde App cuando llega SignalR) ─
+
+    public void CargarFolioAdelantado(string embFolio,string prodClave,string reciboSug,string tarimaSug)
+    {
+        EmbFolio = embFolio;
+        EsFolioAdelantado = true;
+        BatchId = $"{prodClave.Trim()}-{reciboSug.Trim()}-{tarimaSug.Trim()}";
+        StatusMessage = $"📦 Folio {embFolio} — Lote: {BatchId}";
+        StatusColor = "#00BFFF";
+    }
+
+    // ── RelayCommand: procesar código ingresado manualmente ──────────────────
+
     [RelayCommand]
     private async Task ProcessScannedCodeAsync()
     {
-        var code = ScannedCode;
-
-        if (string.IsNullOrWhiteSpace(code))
+        if (string.IsNullOrWhiteSpace(ScannedCode))
         {
-            StatusMessage = "❌ Ingrese un código";
+            StatusMessage = "❌ Ingresa un código";
             StatusColor = "#FF4444";
             return;
         }
 
-        await ProcessCodeFromCameraAsync(code, BarcodeFormat.QrCode);
+        await ProcessCodeFromCameraAsync(ScannedCode, BarcodeFormat.QrCode);
     }
 
-    /// <summary>
-    /// Lógica compartida de procesamiento (NO decorada con RelayCommand)
-    /// </summary>
+    // ── Lógica compartida de procesamiento de código ─────────────────────────
+
     private async Task ProcessCodeFromCameraAsync(string code, BarcodeFormat format)
     {
+        // ¿Es un QR de solicitud de folio adelantado? (viene de CargaEmbarques)
+        if (code.StartsWith("{") && code.Contains("embFolio"))
+        {
+            await ProcesarQrFolioAdelantadoAsync(code);
+            return;
+        }
+
+        // Flujo normal: etiqueta verde del pallet
         if (!_scannerService.IsValidLabelCode(code))
         {
-            StatusMessage = "❌ Código no válido. Intente de nuevo.";
+            StatusMessage = "❌ Código no válido. Intenta de nuevo.";
             StatusColor = "#FF4444";
             return;
         }
@@ -124,6 +121,8 @@ public partial class OTPViewModel : BaseViewModel
             _lastScanData = _scannerService.ParseScannedCode(code, format);
             BatchId = _lastScanData.ExtractedBatchId;
             ProductName = _lastScanData.ExtractedProduct;
+            EmbFolio = string.Empty;
+            EsFolioAdelantado = false;
 
             StatusMessage = $"✅ Lote: {_scannerService.FormatBatchIdForDisplay(BatchId)}";
             StatusColor = "#44FF44";
@@ -141,12 +140,38 @@ public partial class OTPViewModel : BaseViewModel
         }
     }
 
+    // ── Procesar QR de solicitud de folio adelantado ─────────────────────────
+
+    private async Task ProcesarQrFolioAdelantadoAsync(string jsonCode)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonCode);
+            var root = doc.RootElement;
+
+            EmbFolio = root.TryGetProperty("embFolio", out var f) ? f.GetString() ?? "" : "";
+            var prod = root.TryGetProperty("prodClave", out var p) ? p.GetString() ?? "" : "";
+            var rec = root.TryGetProperty("reciboSug", out var r) ? r.GetString() ?? "" : "";
+            var tar = root.TryGetProperty("tarimaSug", out var t) ? t.GetString() ?? "" : "";
+
+            CargarFolioAdelantado(EmbFolio, prod, rec, tar);
+            await GenerateOTPForFolioAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"❌ QR inválido: {ex.Message}";
+            StatusColor = "#FF4444";
+        }
+    }
+
+    // ── Generar OTP para flujo normal (etiqueta verde) ───────────────────────
+
     [RelayCommand]
     private async Task GenerateOTPAsync()
     {
         if (string.IsNullOrEmpty(BatchId))
         {
-            StatusMessage = "❌ Escanee un lote primero";
+            StatusMessage = "❌ Escanea un lote primero";
             StatusColor = "#FF4444";
             return;
         }
@@ -175,36 +200,15 @@ public partial class OTPViewModel : BaseViewModel
 
             if (response?.Success == true && response.Data != null)
             {
-                OtpCode = response.Data.Code;
-                CountdownSeconds = response.Data.SecondsRemaining;
-
-                ShowScan = false;
-                ShowOTP = true;
-
-                StatusMessage = "✅ Código generado - Léalo en voz alta al operador";
-                StatusColor = "#44FF44";
-
-                StartCountdown();
-
-                if (HapticFeedback.IsSupported)
-                {
-                    HapticFeedback.Perform(HapticFeedbackType.LongPress);
-                }
+                MostrarOTP(response.Data.Code, response.Data.SecondsRemaining);
             }
             else
             {
                 var errorMsg = response?.Message ?? "Error desconocido";
-
-                if (response?.Errors?.Contains("OFFLINE_MODE") == true)
-                {
-                    StatusMessage = "📵 Sin conexión - Solicitud guardada para sincronizar";
-                    StatusColor = "#FFAA00";
-                }
-                else
-                {
-                    StatusMessage = $"❌ {errorMsg}";
-                    StatusColor = "#FF4444";
-                }
+                StatusMessage = response?.Errors?.Contains("OFFLINE_MODE") == true
+                    ? "📵 Sin conexión — Solicitud guardada para sincronizar"
+                    : $"❌ {errorMsg}";
+                StatusColor = "#FF4444";
             }
         }
         catch (Exception ex)
@@ -219,6 +223,77 @@ public partial class OTPViewModel : BaseViewModel
         }
     }
 
+    // ── Generar OTP para folio adelantado (usa endpoint /generate-folio) ─────
+
+    [RelayCommand]
+    private async Task GenerateOTPForFolioAsync()
+    {
+        if (string.IsNullOrEmpty(EmbFolio))
+        {
+            StatusMessage = "❌ No hay folio adelantado cargado";
+            StatusColor = "#FF4444";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(SupervisorId))
+        {
+            StatusMessage = "❌ Sesión no iniciada";
+            StatusColor = "#FF4444";
+            return;
+        }
+
+        IsGenerating = true;
+        StatusMessage = "⏳ Generando OTP para folio adelantado...";
+        StatusColor = "#FFAA00";
+
+        try
+        {
+            // Reutiliza GenerateOTPAsync del ATUApiClient pero con el endpoint de folio
+            var response = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, SupervisorId);
+
+            if (response?.Success == true && response.Data != null)
+            {
+                BatchId = response.Data.BatchId;
+                MostrarOTP(response.Data.Code, response.Data.SecondsRemaining);
+                StatusMessage = "✅ Código generado — Léalo en voz alta al operador de embarques";
+            }
+            else
+            {
+                StatusMessage = $"❌ {response?.Message ?? "Error desconocido"}";
+                StatusColor = "#FF4444";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generando OTP para folio");
+            StatusMessage = $"❌ Error: {ex.Message}";
+            StatusColor = "#FF4444";
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+
+    // ── Mostrar OTP en pantalla y arrancar countdown ──────────────────────────
+
+    private void MostrarOTP(string code, int seconds)
+    {
+        OtpCode = code;
+        CountdownSeconds = seconds > 0 ? seconds : ATUApiClient.OtpTtlSeconds;
+        ShowScan = false;
+        ShowOTP = true;
+        StatusMessage = "✅ Código generado — Léalo en voz alta al operador";
+        StatusColor = "#44FF44";
+
+        StartCountdown();
+
+        if (HapticFeedback.IsSupported)
+            HapticFeedback.Perform(HapticFeedbackType.LongPress);
+    }
+
+    // ── Reset ─────────────────────────────────────────────────────────────────
+
     [RelayCommand]
     private void ResetScan()
     {
@@ -228,15 +303,17 @@ public partial class OTPViewModel : BaseViewModel
         BatchId = string.Empty;
         ProductName = null;
         OtpCode = string.Empty;
-        CountdownSeconds = 30;
-        CountdownText = "00:30";
-
+        EmbFolio = string.Empty;
+        EsFolioAdelantado = false;
+        CountdownSeconds = ATUApiClient.OtpTtlSeconds;
+        CountdownText = $"00:{ATUApiClient.OtpTtlSeconds:D2}";
         ShowScan = true;
         ShowOTP = false;
-
-        StatusMessage = "Escaneé la etiqueta verde del producto";
+        StatusMessage = "Escanea la etiqueta verde del producto";
         StatusColor = "#FFFFFF";
     }
+
+    // ── Countdown ─────────────────────────────────────────────────────────────
 
     private void StartCountdown()
     {
@@ -247,23 +324,22 @@ public partial class OTPViewModel : BaseViewModel
         {
             while (CountdownSeconds > 0)
             {
-                _countdownCts.Token.ThrowIfCancellationRequested();
-
-                await Task.Delay(1000, _countdownCts.Token);
+                try { await Task.Delay(1000, _countdownCts.Token); }
+                catch (OperationCanceledException) { return; }
 
                 CountdownSeconds--;
 
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    var seconds = Math.Max(0, CountdownSeconds);
-                    CountdownText = $"00:{seconds:D2}";
+                    var s = Math.Max(0, CountdownSeconds);
+                    CountdownText = $"00:{s:D2}";
 
-                    if (seconds <= 5)
+                    if (s <= 5)
                     {
                         StatusColor = "#FF4444";
-                        StatusMessage = $"⚠️ Código expira en {seconds}s";
+                        StatusMessage = $"⚠️ Código expira en {s}s";
                     }
-                    else if (seconds <= 10)
+                    else if (s <= 10)
                     {
                         StatusColor = "#FFAA00";
                     }
@@ -272,15 +348,13 @@ public partial class OTPViewModel : BaseViewModel
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                StatusMessage = "⏰ Código expirado - Genere uno nuevo";
+                StatusMessage = "⏰ Código expirado — Genera uno nuevo";
                 StatusColor = "#FF4444";
                 ShowOTP = false;
                 ShowScan = true;
 
                 if (HapticFeedback.IsSupported)
-                {
                     HapticFeedback.Perform(HapticFeedbackType.Click);
-                }
             });
         }, _countdownCts.Token);
     }

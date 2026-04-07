@@ -61,7 +61,7 @@
                         Margin="10,15"
                         FontSize="24"
                         HorizontalTextAlignment="Center"
-                        Keyboard="Numeric"
+                        Keyboard="Default"
                         MaxLength="10"
                         Placeholder="Ej: 12345"
                         PlaceholderColor="#555"

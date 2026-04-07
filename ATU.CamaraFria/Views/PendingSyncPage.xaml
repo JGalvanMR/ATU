@@ -3,23 +3,152 @@
     x:Class="ATU.CamaraFria.Views.PendingSyncPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Pendientes"
     BackgroundColor="#070B18">
 
-    <Grid Padding="20" RowDefinitions="Auto,*">
-        <Label
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!--  Resumen  -->
+        <Border
             Grid.Row="0"
-            Margin="0,20,0,20"
+            Margin="16,16,16,0"
+            Padding="16"
+            BackgroundColor="#0D1525"
+            Stroke="#1E3050"
+            StrokeShape="RoundRectangle 12">
+            <Grid ColumnDefinitions="*,*,*">
+                <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center">
+                    <Label
+                        x:Name="LblTotalPendientes"
+                        FontAttributes="Bold"
+                        FontSize="32"
+                        HorizontalOptions="Center"
+                        Text="0"
+                        TextColor="#FFB800" />
+                    <Label
+                        FontSize="11"
+                        HorizontalOptions="Center"
+                        Text="Pendientes"
+                        TextColor="#5A7FA8" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center">
+                    <Label
+                        x:Name="LblFallidos"
+                        FontAttributes="Bold"
+                        FontSize="32"
+                        HorizontalOptions="Center"
+                        Text="0"
+                        TextColor="#FF2D55" />
+                    <Label
+                        FontSize="11"
+                        HorizontalOptions="Center"
+                        Text="Fallidos"
+                        TextColor="#5A7FA8" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center">
+                    <Label
+                        x:Name="LblConexion"
+                        FontAttributes="Bold"
+                        FontSize="22"
+                        HorizontalOptions="Center"
+                        Text="—"
+                        TextColor="#5A7FA8" />
+                    <Label
+                        FontSize="11"
+                        HorizontalOptions="Center"
+                        Text="Red"
+                        TextColor="#5A7FA8" />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+        <!--  Botón sincronizar  -->
+        <Button
+            x:Name="BtnSync"
+            Grid.Row="1"
+            Margin="16,10"
+            BackgroundColor="#00BFFF"
+            Clicked="OnSincronizar"
+            CornerRadius="10"
             FontAttributes="Bold"
-            FontSize="24"
-            Text="Sincronización Pendiente"
-            TextColor="#00BFFF" />
+            FontSize="15"
+            HeightRequest="48"
+            Text="🔄  Sincronizar ahora"
+            TextColor="Black" />
+
+        <!--  Lista de elementos pendientes  -->
+        <CollectionView
+            x:Name="ListaPendientes"
+            Grid.Row="2"
+            Margin="16,0">
+            <CollectionView.EmptyView>
+                <VerticalStackLayout
+                    HorizontalOptions="Center"
+                    Spacing="12"
+                    VerticalOptions="Center">
+                    <Label
+                        FontSize="48"
+                        HorizontalOptions="Center"
+                        Text="✅" />
+                    <Label
+                        FontSize="15"
+                        HorizontalOptions="Center"
+                        Text="No hay elementos pendientes"
+                        TextColor="#5A7FA8" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        Margin="0,4"
+                        Padding="14"
+                        BackgroundColor="#0D1525"
+                        Stroke="#1E3050"
+                        StrokeShape="RoundRectangle 10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <!--  Ícono según tipo  -->
+                            <Label
+                                Grid.Column="0"
+                                Margin="0,0,12,0"
+                                FontSize="22"
+                                Text="{Binding TipoIcono}"
+                                VerticalOptions="Center" />
+                            <!--  Info  -->
+                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                <Label
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    Text="{Binding TipoTexto}"
+                                    TextColor="White" />
+                                <Label
+                                    FontSize="11"
+                                    Text="{Binding CreatedAt, StringFormat='Creado: {0:dd/MM HH:mm}'}"
+                                    TextColor="#5A7FA8" />
+                                <Label
+                                    FontSize="11"
+                                    IsVisible="{Binding TieneError}"
+                                    Text="{Binding ErrorMessage}"
+                                    TextColor="#FF6B6B" />
+                            </VerticalStackLayout>
+                            <!--  Reintentos  -->
+                            <Label
+                                Grid.Column="2"
+                                FontSize="12"
+                                Text="{Binding RetryCount, StringFormat='#{0}'}"
+                                TextColor="#5A7FA8"
+                                VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
 
         <Label
-            Grid.Row="1"
-            FontSize="16"
+            Grid.Row="3"
+            Margin="16,8"
+            FontSize="11"
             HorizontalOptions="Center"
-            Text="Pantalla en desarrollo..."
-            TextColor="#666"
-            VerticalOptions="Center" />
+            Text="Los elementos se sincronizan automáticamente cuando hay red"
+            TextColor="#2A4060" />
     </Grid>
 </ContentPage>

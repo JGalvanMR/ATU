@@ -1,4 +1,3 @@
-using System;
 using ATU.CamaraFria.ViewModels;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -10,6 +9,7 @@ namespace ATU.CamaraFria.Views;
 public partial class OTPDisplayPage : ContentPage
 {
     private readonly OTPViewModel _viewModel;
+    private bool _procesandoCodigo = false; // evita disparos dobles de la cámara
 
     public OTPDisplayPage(OTPViewModel viewModel)
     {
@@ -17,28 +17,61 @@ public partial class OTPDisplayPage : ContentPage
         BindingContext = _viewModel = viewModel;
     }
 
-    private void OnEntryCompleted(object sender, EventArgs e)
+    // ── Callback de ZXing cuando detecta un código ───────────────────────────
+
+    private void OnBarcodesDetected(object sender, BarcodeDetectionEventArgs e)
     {
-        _viewModel.ProcessScannedCodeCommand.Execute(null);
+        // ZXing dispara en hilo de cámara, lo pasamos al hilo UI
+        var primer = e.Results.FirstOrDefault();
+        if (primer == null) return;
+
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            // Ignorar si ya estamos procesando o mostrando OTP
+            if (_procesandoCodigo || _viewModel.ShowOTP) return;
+            _procesandoCodigo = true;
+
+            // Pausar detección mientras procesamos
+            CameraScanner.IsDetecting = false;
+
+            _viewModel.OnBarcodeDetected(primer.Value, primer.Format);
+
+            // Reactivar después de 3 segundos si no se generó OTP
+            await Task.Delay(3000);
+            if (!_viewModel.ShowOTP)
+                CameraScanner.IsDetecting = true;
+
+            _procesandoCodigo = false;
+        });
     }
+
+    // ── Ciclo de vida de la página ────────────────────────────────────────────
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        UpdateConnectionIndicator();
-    }
-
-    private void UpdateConnectionIndicator()
-    {
-        var isConnected = Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
-        ConnectionIndicator.BackgroundColor = isConnected
-            ? Colors.LimeGreen
-            : Colors.Red;
+        CameraScanner.IsDetecting = true;
+        ActualizarIndicadorConexion();
+        ActualizarFolioActivo();
     }
 
     protected override void OnDisappearing()
     {
+        CameraScanner.IsDetecting = false;
         _viewModel.ResetScanCommand.Execute(null);
         base.OnDisappearing();
+    }
+
+    private void ActualizarIndicadorConexion()
+    {
+        var conectado = Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
+        ConnectionIndicator.BackgroundColor = conectado ? Colors.LimeGreen : Colors.Red;
+    }
+
+    private void ActualizarFolioActivo()
+    {
+        LblFolioActivo.Text = string.IsNullOrEmpty(_viewModel.EmbFolio)
+            ? ""
+            : $"Folio: {_viewModel.EmbFolio}";
     }
 }

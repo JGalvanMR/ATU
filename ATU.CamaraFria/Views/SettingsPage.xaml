@@ -3,23 +3,191 @@
     x:Class="ATU.CamaraFria.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Configuración"
     BackgroundColor="#070B18">
 
-    <Grid Padding="20" RowDefinitions="Auto,*">
-        <Label
-            Grid.Row="0"
-            Margin="0,20,0,20"
-            FontAttributes="Bold"
-            FontSize="24"
-            Text="Configuración"
-            TextColor="#00BFFF" />
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
 
-        <Label
-            Grid.Row="1"
-            FontSize="16"
-            HorizontalOptions="Center"
-            Text="Pantalla en desarrollo..."
-            TextColor="#666"
-            VerticalOptions="Center" />
-    </Grid>
+            <!--  Sesión activa  -->
+            <Label
+                Margin="0,10,0,0"
+                CharacterSpacing="2"
+                FontSize="11"
+                Text="SESIÓN ACTIVA"
+                TextColor="#5A7FA8" />
+
+            <Border
+                Padding="16"
+                BackgroundColor="#0D1525"
+                Stroke="#1E3050"
+                StrokeShape="RoundRectangle 12">
+                <Grid
+                    ColumnDefinitions="Auto,*"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="6">
+                    <Label
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        FontSize="24"
+                        Text="👤"
+                        VerticalOptions="Center" />
+                    <VerticalStackLayout
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="12,0,0,0">
+                        <Label
+                            x:Name="LblNombre"
+                            FontAttributes="Bold"
+                            FontSize="17"
+                            Text="—"
+                            TextColor="White" />
+                        <Label
+                            x:Name="LblEmpleado"
+                            FontSize="13"
+                            Text="—"
+                            TextColor="#5A7FA8" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <!--  Servidor ATU  -->
+            <Label
+                Margin="0,6,0,0"
+                CharacterSpacing="2"
+                FontSize="11"
+                Text="SERVIDOR ATU"
+                TextColor="#5A7FA8" />
+
+            <Border
+                Padding="16"
+                BackgroundColor="#0D1525"
+                Stroke="#1E3050"
+                StrokeShape="RoundRectangle 12">
+                <VerticalStackLayout Spacing="10">
+                    <Label
+                        FontSize="13"
+                        Text="URL del servidor:"
+                        TextColor="#AAA" />
+                    <Border
+                        BackgroundColor="#13203A"
+                        Stroke="#333"
+                        StrokeShape="RoundRectangle 8">
+                        <Entry
+                            x:Name="EntryUrl"
+                            Margin="10,8"
+                            FontSize="14"
+                            Keyboard="Url"
+                            Placeholder="http://192.168.x.x:5059"
+                            PlaceholderColor="#555"
+                            TextColor="White" />
+                    </Border>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button
+                            Grid.Column="0"
+                            BackgroundColor="#00BFFF"
+                            Clicked="OnGuardarUrl"
+                            CornerRadius="8"
+                            FontAttributes="Bold"
+                            HeightRequest="44"
+                            Text="💾 Guardar"
+                            TextColor="Black" />
+                        <Button
+                            Grid.Column="1"
+                            BackgroundColor="#1E3050"
+                            Clicked="OnProbarConexion"
+                            CornerRadius="8"
+                            HeightRequest="44"
+                            Text="🔌 Probar"
+                            TextColor="White" />
+                    </Grid>
+                    <Label
+                        x:Name="LblEstadoConexion"
+                        FontSize="13"
+                        HorizontalOptions="Center"
+                        Text="" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!--  Info dispositivo  -->
+            <Label
+                Margin="0,6,0,0"
+                CharacterSpacing="2"
+                FontSize="11"
+                Text="DISPOSITIVO"
+                TextColor="#5A7FA8" />
+
+            <Border
+                Padding="16"
+                BackgroundColor="#0D1525"
+                Stroke="#1E3050"
+                StrokeShape="RoundRectangle 12">
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Label
+                            Grid.Column="0"
+                            FontSize="13"
+                            Text="Modelo:"
+                            TextColor="#5A7FA8"
+                            WidthRequest="90" />
+                        <Label
+                            x:Name="LblModelo"
+                            Grid.Column="1"
+                            FontSize="13"
+                            Text="—"
+                            TextColor="White" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Label
+                            Grid.Column="0"
+                            FontSize="13"
+                            Text="Android:"
+                            TextColor="#5A7FA8"
+                            WidthRequest="90" />
+                        <Label
+                            x:Name="LblAndroid"
+                            Grid.Column="1"
+                            FontSize="13"
+                            Text="—"
+                            TextColor="White" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Label
+                            Grid.Column="0"
+                            FontSize="13"
+                            Text="Device ID:"
+                            TextColor="#5A7FA8"
+                            WidthRequest="90" />
+                        <Label
+                            x:Name="LblDeviceId"
+                            Grid.Column="1"
+                            FontSize="11"
+                            LineBreakMode="CharacterWrap"
+                            Text="—"
+                            TextColor="White" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!--  Cerrar sesión  -->
+            <Button
+                Margin="0,10,0,0"
+                BackgroundColor="#300010"
+                Clicked="OnCerrarSesion"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                FontSize="16"
+                HeightRequest="52"
+                Text="🚪  Cerrar Sesión"
+                TextColor="#FF2D55" />
+
+            <Label
+                Margin="0,10,0,20"
+                FontSize="11"
+                HorizontalOptions="Center"
+                Text="ATU Cámara Fría v1.0 · mrlucky"
+                TextColor="#2A4060" />
+
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

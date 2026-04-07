@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using ATU.CamaraFria.Models;
 using Microsoft.Extensions.Logging;
@@ -13,26 +11,30 @@ using Refit;
 
 namespace ATU.CamaraFria.Services;
 
+// ── Interfaz Refit ────────────────────────────────────────────────────────────
+
 public interface IATUApi
 {
     [Post("/api/otp/generate")]
     Task<OTPResponse> GenerateOTP([Body] OTPRequest request);
 
+    [Post("/api/otp/generate-folio")]
+    Task<OTPResponse> GenerateOTPForFolio([Body] GenerateOtpFolioRequest request);
+
     [Post("/api/otp/validate")]
     Task<ValidationResponse> ValidateOTP([Body] ValidateOTPRequest request);
+
+    [Post("/api/otp/request")]
+    Task<GenericResponse> CreateFolioRequest([Body] FolioAdelantatadoRequest request);
 
     [Post("/api/auth/login")]
     Task<LoginResponse> Login([Body] LoginRequest request);
 
-    [Post("/api/device/enroll")]
-    Task<EnrollResponse> EnrollDevice([Body] EnrollDeviceRequest request);
-
-    [Get("/api/device/status")]
-    Task<DeviceStatusResponse> GetDeviceStatus([Header("X-Device-Fingerprint")] string fingerprint);
-
     [Get("/health")]
     Task<HealthResponse> HealthCheck();
 }
+
+// ── DTOs adicionales ──────────────────────────────────────────────────────────
 
 public class ValidateOTPRequest
 {
@@ -50,6 +52,36 @@ public class ValidationResponse
     public bool IsAuthorized { get; set; }
 }
 
+public class GenerateOtpFolioRequest
+{
+    public string EmbFolio { get; set; } = string.Empty;
+    public string SupervisorId { get; set; } = string.Empty;
+    public string DeviceFingerprint { get; set; } = string.Empty;
+}
+
+public class FolioAdelantatadoRequest
+{
+    public string EmbFolio { get; set; } = string.Empty;
+    public string ReciboCap { get; set; } = string.Empty;
+    public string ReciboSug { get; set; } = string.Empty;
+    public string FechaRecCap { get; set; } = string.Empty;
+    public string FechaRecSug { get; set; } = string.Empty;
+    public string ProdClave { get; set; } = string.Empty;
+    public string Producto { get; set; } = string.Empty;
+    public string Cantidad { get; set; } = string.Empty;
+    public string TarimaCap { get; set; } = string.Empty;
+    public string TarimaSug { get; set; } = string.Empty;
+    public string Responsable { get; set; } = string.Empty;
+    public string Motivo { get; set; } = string.Empty;
+    public string Imei { get; set; } = string.Empty;
+}
+
+public class GenericResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
 public class EnrollDeviceRequest
 {
     public string SupervisorId { get; set; } = string.Empty;
@@ -65,22 +97,19 @@ public class EnrollResponse
     public string? DeviceSecret { get; set; }
 }
 
-public class DeviceStatusResponse
-{
-    public bool IsEnrolled { get; set; }
-    public string? DeviceId { get; set; }
-    public DateTime? EnrolledAt { get; set; }
-    public bool IsActive { get; set; }
-}
-
 public class HealthResponse
 {
     public string Status { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
 }
 
+// ── Cliente principal ─────────────────────────────────────────────────────────
+
 public class ATUApiClient
 {
+    /// <summary>Segundos de vida del OTP — coincide con el backend.</summary>
+    public const int OtpTtlSeconds = 30;
+
     private IATUApi _api;
     private readonly SyncQueueService _syncQueue;
     private readonly ILogger<ATUApiClient> _logger;
@@ -98,31 +127,23 @@ public class ATUApiClient
         _deviceFingerprint = fingerprintService.GetFingerprint();
 
         var baseUrl = Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5059");
-
-        var settings = new RefitSettings
-        {
-            ContentSerializer = new SystemTextJsonContentSerializer(new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })
-        };
-
-        _api = RestService.For<IATUApi>(baseUrl, settings);
+        _api = BuildApi(baseUrl);
     }
 
     public void SetBaseUrl(string url)
     {
         Preferences.Set(BASE_URL_KEY, url);
-
-        var settings = new RefitSettings
-        {
-            ContentSerializer = new SystemTextJsonContentSerializer(new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            })
-        };
-        _api = RestService.For<IATUApi>(url, settings);
+        _api = BuildApi(url);
     }
+
+    private static IATUApi BuildApi(string baseUrl)
+        => RestService.For<IATUApi>(baseUrl, new RefitSettings
+        {
+            ContentSerializer = new SystemTextJsonContentSerializer(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+        });
+
+    // ── Generar OTP (flujo normal — etiqueta verde) ───────────────────────────
 
     public async Task<OTPResponse?> GenerateOTPAsync(OTPRequest request)
     {
@@ -132,7 +153,6 @@ public class ATUApiClient
         {
             if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
             {
-                _logger.LogWarning("Sin conectividad - guardando en cola de sincronización");
                 await _syncQueue.EnqueueAsync(SyncType.OTPGeneration, request);
                 return new OTPResponse
                 {
@@ -143,11 +163,8 @@ public class ATUApiClient
             }
 
             var response = await _api.GenerateOTP(request);
-
             if (response.Success && response.Data != null)
-            {
                 await SaveLastOTPAsync(response.Data);
-            }
 
             return response;
         }
@@ -155,7 +172,6 @@ public class ATUApiClient
         {
             _logger.LogError(ex, "Error de conexión al generar OTP");
             await _syncQueue.EnqueueAsync(SyncType.OTPGeneration, request);
-
             return new OTPResponse
             {
                 Success = false,
@@ -175,20 +191,49 @@ public class ATUApiClient
         }
     }
 
-    public async Task<ValidationResponse?> ValidateOTPAsync(string code, string batchId, string supervisorId)
+    // ── Generar OTP para folio adelantado ────────────────────────────────────
+
+    public async Task<OTPResponse?> GenerateOTPForFolioAsync(string embFolio, string supervisorId)
     {
         try
         {
-            var request = new ValidateOTPRequest
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+                return new OTPResponse
+                {
+                    Success = false,
+                    Message = "Sin conexión. La generación de OTP requiere conexión.",
+                    Errors = new List<string> { "OFFLINE_MODE" }
+                };
+
+            var request = new GenerateOtpFolioRequest
             {
-                Code = code,
-                BatchId = batchId,
+                EmbFolio = embFolio,
                 SupervisorId = supervisorId,
                 DeviceFingerprint = _deviceFingerprint
             };
 
-            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            return await _api.GenerateOTPForFolio(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al generar OTP para folio {Folio}", embFolio);
+            return new OTPResponse
             {
+                Success = false,
+                Message = $"Error: {ex.Message}",
+                Errors = new List<string> { ex.Message }
+            };
+        }
+    }
+
+    // ── Validar OTP ───────────────────────────────────────────────────────────
+
+    public async Task<ValidationResponse?> ValidateOTPAsync(
+        string code, string batchId, string supervisorId)
+    {
+        try
+        {
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
                 return new ValidationResponse
                 {
                     Success = false,
@@ -196,9 +241,14 @@ public class ATUApiClient
                     Message = "Sin conexión. No se puede validar el OTP.",
                     IsAuthorized = false
                 };
-            }
 
-            return await _api.ValidateOTP(request);
+            return await _api.ValidateOTP(new ValidateOTPRequest
+            {
+                Code = code,
+                BatchId = batchId,
+                SupervisorId = supervisorId,
+                DeviceFingerprint = _deviceFingerprint
+            });
         }
         catch (Exception ex)
         {
@@ -213,10 +263,11 @@ public class ATUApiClient
         }
     }
 
+    // ── Login ─────────────────────────────────────────────────────────────────
+
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
     {
         request.DeviceFingerprint = _deviceFingerprint;
-
         try
         {
             return await _api.Login(request);
@@ -232,39 +283,34 @@ public class ATUApiClient
         }
     }
 
+    // ── Health check ──────────────────────────────────────────────────────────
+
     public async Task<bool> IsServerAvailableAsync()
     {
         try
         {
             var response = await _api.HealthCheck();
-            return response?.Status == "Healthy";
+            return response?.Status?.Equals("Healthy", StringComparison.OrdinalIgnoreCase) == true;
         }
-        catch
-        {
-            return false;
-        }
+        catch { return false; }
     }
 
-    private async Task SaveLastOTPAsync(OTPData otp)
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static async Task SaveLastOTPAsync(OTPData otp)
     {
         var json = JsonSerializer.Serialize(otp);
         Preferences.Set("LAST_OTP", json);
         Preferences.Set("LAST_OTP_TIME", otp.GeneratedAt.ToBinary());
+        await Task.CompletedTask;
     }
 
     public OTPData? GetLastOTP()
     {
         var json = Preferences.Get("LAST_OTP", null);
         if (json == null) return null;
-
-        try
-        {
-            return JsonSerializer.Deserialize<OTPData>(json);
-        }
-        catch
-        {
-            return null;
-        }
+        try { return JsonSerializer.Deserialize<OTPData>(json); }
+        catch { return null; }
     }
 }
 

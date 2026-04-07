@@ -1,13 +1,9 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using ATU.CamaraFria.Services;
+﻿using ATU.CamaraFria.Services;
 using ATU.CamaraFria.ViewModels;
 using ATU.CamaraFria.Views;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Maui.Controls.Hosting;
-using Microsoft.Maui.Hosting;
+using Microsoft.Extensions.Logging;
 using Plugin.Maui.Biometric;
+using ZXing.Net.Maui.Controls;
 
 namespace ATU.CamaraFria;
 
@@ -21,30 +17,39 @@ public static class MauiProgram
 
             builder
                 .UseMauiApp<App>()
+                .UseBarcodeReader()          // ZXing — REQUERIDO o crashea
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            // === INYECCIÓN DE DEPENDENCIAS ===
+#if DEBUG
+            builder.Logging.AddDebug();
+#endif
 
+            // ── Infraestructura ──────────────────────────────────────────────
             builder.Services.AddSingleton<SyncDbContext>();
             builder.Services.AddSingleton<SyncQueueService>();
             builder.Services.AddSingleton<IDeviceFingerprintService, DeviceFingerprintService>();
             builder.Services.AddSingleton<ATUApiClient>();
 
+            // ── SignalR listener (NUEVO — notificaciones desde CargaEmbarques) ─
+            builder.Services.AddSingleton<SignalRListenerService>();
+
+            // ── Biometría ────────────────────────────────────────────────────
             builder.Services.AddSingleton<IBiometric, MockBiometric>();
             builder.Services.AddSingleton<BiometricService>();
 
+            // ── Scanner ──────────────────────────────────────────────────────
             builder.Services.AddSingleton<IScannerService, ScannerService>();
 
-            // ViewModels
+            // ── ViewModels ───────────────────────────────────────────────────
             builder.Services.AddTransient<LoginViewModel>();
             builder.Services.AddTransient<MainViewModel>();
             builder.Services.AddTransient<OTPViewModel>();
 
-            // Páginas
+            // ── Páginas ──────────────────────────────────────────────────────
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddTransient<OTPDisplayPage>();
             builder.Services.AddTransient<PendingSyncPage>();
@@ -54,29 +59,25 @@ public static class MauiProgram
         }
         catch (Exception ex)
         {
-            // Si falla la creación del builder, esto escribirá en el log de Android
-            Console.WriteLine($"🔥 FATAL EN MAUIPROGRAM: {ex.Message}\n{ex.StackTrace}");
-            throw; // Lanzarlo para que lo atrape App.xaml.cs
+            Console.WriteLine($"[ATU FATAL en MauiProgram]: {ex}");
+            throw;
         }
     }
 }
 
+// MockBiometric sin cambios
 public class MockBiometric : IBiometric
 {
-    public Task<AuthenticationResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(new AuthenticationResponse());
-    }
+    public Task<AuthenticationResponse> AuthenticateAsync(
+        AuthenticationRequest request,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult(new AuthenticationResponse());
 
     public Task<BiometricHwStatus> GetAuthenticationStatusAsync(AuthenticatorStrength strength)
-    {
-        return Task.FromResult(BiometricHwStatus.Unsupported);
-    }
+        => Task.FromResult(BiometricHwStatus.Unsupported);
 
     public Task<BiometricType[]> GetEnrolledBiometricTypesAsync()
-    {
-        return Task.FromResult(Array.Empty<BiometricType>());
-    }
+        => Task.FromResult(Array.Empty<BiometricType>());
 
     public bool IsPlatformSupported => true;
 }

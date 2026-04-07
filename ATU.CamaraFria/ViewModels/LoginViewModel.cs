@@ -17,40 +17,28 @@ public partial class LoginViewModel : BaseViewModel
     private readonly ATUApiClient _apiClient;
     private readonly ILogger<LoginViewModel> _logger;
 
-    [ObservableProperty]
-    private string _employeeNumber = string.Empty;
-
-    [ObservableProperty]
-    private string _serverUrl = "http://192.168.1.100:5001";
-
-    [ObservableProperty]
-    private bool _showServerConfig = false;
-
-    [ObservableProperty]
-    private string _errorMessage = string.Empty;
-
-    [ObservableProperty]
-    private bool _hasError = false;
-
-    [RelayCommand]
-    private void ToggleServerConfig()
-    {
-        ShowServerConfig = !ShowServerConfig;
-    }
+    [ObservableProperty] private string _employeeNumber = string.Empty;
+    [ObservableProperty] private string _serverUrl = "http://192.168.123.155:5059";
+    [ObservableProperty] private bool _showServerConfig;
+    [ObservableProperty] private string _errorMessage = string.Empty;
+    [ObservableProperty] private bool _hasError;
 
     public LoginViewModel(ATUApiClient apiClient, ILogger<LoginViewModel> logger)
     {
         _apiClient = apiClient;
         _logger = logger;
-        _serverUrl = Preferences.Get("SERVER_URL", "http://192.168.1.100:5001");
+        _serverUrl = Preferences.Get("SERVER_URL", "http://192.168.123.155:5059");
     }
+
+    [RelayCommand]
+    private void ToggleServerConfig() => ShowServerConfig = !ShowServerConfig;
 
     [RelayCommand]
     private async Task LoginAsync()
     {
         if (string.IsNullOrWhiteSpace(EmployeeNumber))
         {
-            ErrorMessage = "Ingrese el número de empleado";
+            ErrorMessage = "Ingresa el número de empleado";
             HasError = true;
             return;
         }
@@ -61,10 +49,14 @@ public partial class LoginViewModel : BaseViewModel
 
         try
         {
+            // Actualizar URL del servidor si fue modificada
+            _apiClient.SetBaseUrl(ServerUrl);
+            Preferences.Set("SERVER_URL", ServerUrl);
+
             var request = new LoginRequest
             {
                 EmployeeNumber = EmployeeNumber,
-                DeviceName = DeviceInfo.Model ?? "Unknown"
+                DeviceName = DeviceInfo.Model ?? "Android"
             };
 
             var response = await _apiClient.LoginAsync(request);
@@ -75,11 +67,10 @@ public partial class LoginViewModel : BaseViewModel
                 Preferences.Set("AUTH_TOKEN", response.Data.Token);
                 Preferences.Set("SUPERVISOR_ID", response.Data.SupervisorId);
                 Preferences.Set("SUPERVISOR_NAME", response.Data.SupervisorName);
-                Preferences.Set("SERVER_URL", ServerUrl);
 
-                // Navegar al main
-                // Cambiar la página raíz al AppShell
-                App.Current.Windows[0].Page = new AppShell();
+                // Navegar al shell principal — sin posibilidad de null
+                if (Application.Current?.Windows.Count > 0)
+                    Application.Current.Windows[0].Page = new AppShell();
             }
             else
             {

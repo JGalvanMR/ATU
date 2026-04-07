@@ -7,15 +7,11 @@
     BackgroundColor="#070B18"
     FlyoutBehavior="Disabled">
 
-    <Shell.FlyoutHeader>
-        <!--  Sin flyout  -->
-    </Shell.FlyoutHeader>
-
     <TabBar
-        BackgroundColor="#0a0e1a"
         Route="MainTab"
-        SelectedTabColor="#00BFFF"
-        UnselectedTabColor="#666">
+        Shell.TabBarBackgroundColor="#0a0e1a"
+        Shell.TabBarForegroundColor="#00BFFF"
+        Shell.TabBarUnselectedColor="#666">
 
         <ShellContent
             Title="Escanear"

@@ -44,6 +44,9 @@
 		<PackageReference Include="Refit" Version="8.0.0" />
 		<PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
 
+		<!-- SignalR CLIENT — necesario para SignalRListenerService -->
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0" />
+
 		<!-- MVVM Toolkit (este sí es correcto, el que da error es el otro) -->
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 	</ItemGroup>
