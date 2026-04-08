@@ -8,10 +8,9 @@
     FlyoutBehavior="Disabled">
 
     <TabBar
-        Route="MainTab"
         Shell.TabBarBackgroundColor="#0a0e1a"
         Shell.TabBarForegroundColor="#00BFFF"
-        Shell.TabBarUnselectedColor="#666">
+        Shell.TabBarUnselectedColor="#555">
 
         <ShellContent
             Title="Escanear"

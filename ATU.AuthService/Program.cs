@@ -17,7 +17,7 @@ builder.Services.AddSignalR();
 // ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalNetwork", policy =>
+    options.AddPolicy("AllowAll", policy =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
@@ -29,6 +29,9 @@ builder.Services.AddSingleton<IDeviceRepository, InMemoryDeviceRepository>();
 builder.Services.AddSingleton<IAuditEventPublisher, InMemoryAuditPublisher>();
 builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
 
+// SQL Server para dispositivos (persiste entre reinicios)
+builder.Services.AddSingleton<IDeviceRepository, SqlDeviceRepository>();
+
 // ── App ───────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
@@ -38,7 +41,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowLocalNetwork");
+app.UseCors("AllowAll");
 app.UseAuthorization();
 
 // Mapear AuditHub para que IHubContext<AuditHub> funcione en OTPController

@@ -25,6 +25,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <MauiImage Include="Resources\Images\scan_icon.svg" />
+	</ItemGroup>
+	<ItemGroup>
+		<MauiImage Include="Resources\Images\settings_icon.svg" />
+	</ItemGroup>
+	<ItemGroup>
+		<MauiImage Include="Resources\Images\sync_icon.svg" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<!-- MAUI -->
 		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.0" />
