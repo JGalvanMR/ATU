@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ATU.CamaraFria.Views.SolicitudesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:models="clr-namespace:ATU.CamaraFria.Models"
+    Title="Solicitudes"
+    BackgroundColor="#070B18">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!--  Header con contador y refresh  -->
+        <Border
+            Grid.Row="0"
+            Margin="16,16,16,8"
+            Padding="14,12"
+            BackgroundColor="#0D1525"
+            Stroke="#1E3050"
+            StrokeShape="RoundRectangle 12">
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="15"
+                        Text="Solicitudes de autorización"
+                        TextColor="White" />
+                    <Label
+                        x:Name="LblUltimaActualizacion"
+                        FontSize="11"
+                        Text="Actualizando..."
+                        TextColor="#5A7FA8" />
+                </VerticalStackLayout>
+                <Button
+                    Grid.Column="1"
+                    BackgroundColor="Transparent"
+                    Clicked="OnRefrescar"
+                    FontSize="22"
+                    HeightRequest="44"
+                    Text="↻"
+                    TextColor="#00BFFF"
+                    WidthRequest="44" />
+            </Grid>
+        </Border>
+
+        <!--  Lista de solicitudes con pull-to-refresh  -->
+        <RefreshView
+            x:Name="RefreshView"
+            Grid.Row="1"
+            RefreshColor="#00BFFF"
+            Refreshing="OnRefrescar">
+            <CollectionView x:Name="ListaSolicitudes" Margin="16,0">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout
+                        Margin="0,60,0,0"
+                        HorizontalOptions="Center"
+                        Spacing="12"
+                        VerticalOptions="Center">
+                        <Label
+                            FontSize="52"
+                            HorizontalOptions="Center"
+                            Text="✅" />
+                        <Label
+                            FontSize="16"
+                            HorizontalOptions="Center"
+                            Text="Sin solicitudes pendientes"
+                            TextColor="#5A7FA8" />
+                        <Label
+                            FontSize="12"
+                            HorizontalOptions="Center"
+                            HorizontalTextAlignment="Center"
+                            LineBreakMode="WordWrap"
+                            Text="Cuando CargaEmbarques detecte un folio adelantado aparecerá aquí."
+                            TextColor="#3A5070" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:SolicitudVm">
+                        <SwipeView>
+                            <SwipeView.RightItems>
+                                <SwipeItems>
+                                    <SwipeItem
+                                        BackgroundColor="#300010"
+                                        CommandParameter="{Binding .}"
+                                        Invoked="OnIgnorarSolicitud"
+                                        Text="Ignorar" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+                            <Border
+                                Margin="0,5"
+                                BackgroundColor="#0D1525"
+                                Stroke="{Binding ColorBorde}"
+                                StrokeShape="RoundRectangle 12"
+                                StrokeThickness="1.5">
+                                <Grid
+                                    Padding="14"
+                                    RowDefinitions="Auto,Auto,Auto,Auto"
+                                    RowSpacing="5">
+
+                                    <!--  Folio + tiempo  -->
+                                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                        <Label
+                                            Grid.Column="0"
+                                            FontAttributes="Bold"
+                                            FontSize="15"
+                                            Text="{Binding TituloFolio}"
+                                            TextColor="White" />
+                                        <Label
+                                            Grid.Column="1"
+                                            FontSize="11"
+                                            Text="{Binding TiempoTranscurrido}"
+                                            TextColor="#5A7FA8"
+                                            VerticalOptions="Center" />
+                                    </Grid>
+
+                                    <!--  Producto  -->
+                                    <Label
+                                        Grid.Row="1"
+                                        FontAttributes="Bold"
+                                        FontSize="14"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding InfoProducto}"
+                                        TextColor="#00BFFF" />
+
+                                    <!--  Pallet  -->
+                                    <Label
+                                        Grid.Row="2"
+                                        FontSize="12"
+                                        Text="{Binding InfoPallet}"
+                                        TextColor="#8AA0BC" />
+
+                                    <!--  Quién solicitó + botón  -->
+                                    <Grid
+                                        Grid.Row="3"
+                                        Margin="0,4,0,0"
+                                        ColumnDefinitions="*,Auto">
+                                        <Label
+                                            Grid.Column="0"
+                                            FontSize="11"
+                                            LineBreakMode="TailTruncation"
+                                            Text="{Binding InfoSolicitante}"
+                                            TextColor="#5A7FA8"
+                                            VerticalOptions="Center" />
+                                        <Button
+                                            Grid.Column="1"
+                                            Padding="12,0"
+                                            BackgroundColor="#00BFFF"
+                                            Clicked="OnAutorizarSolicitud"
+                                            CommandParameter="{Binding .}"
+                                            CornerRadius="8"
+                                            FontAttributes="Bold"
+                                            FontSize="12"
+                                            HeightRequest="38"
+                                            Text="AUTORIZAR"
+                                            TextColor="Black" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </SwipeView>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <Label
+            Grid.Row="2"
+            Margin="16,8"
+            FontSize="11"
+            HorizontalOptions="Center"
+            Text="Desliza a la izquierda para ignorar  ·  Toca AUTORIZAR para generar OTP"
+            TextColor="#2A4060" />
+    </Grid>
+</ContentPage>

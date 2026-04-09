@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATU · Monitor</title>
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="manifest" href="/manifest.json">
     <style>
+        /* (todo tu CSS permanece igual, no lo cambio por brevedad) */
         :root {
             --bg: #070B18;
             --s: #0D1525;
@@ -134,7 +135,6 @@
             letter-spacing: 1px
         }
 
-        /* Grid principal */
         .grid {
             display: grid;
             grid-template-columns: 360px 1fr;
@@ -142,7 +142,6 @@
             height: calc(100vh - 65px)
         }
 
-        /* Stats */
         .stats {
             grid-column: 1/-1;
             display: flex;
@@ -216,7 +215,6 @@
             margin-top: 4px
         }
 
-        /* Panel izquierdo - semáforo */
         .sem {
             background: var(--s);
             border-right: 1px solid var(--b);
@@ -388,7 +386,6 @@
             color: var(--a)
         }
 
-        /* Panel derecho - feed */
         .ap {
             display: flex;
             flex-direction: column;
@@ -591,7 +588,6 @@
             padding: 40px
         }
 
-        /* Fraud modal */
         .fo {
             position: fixed;
             inset: 0;
@@ -670,7 +666,6 @@
             font-family: 'Space Grotesk',sans-serif
         }
 
-        /* Timer */
         .tc {
             width: 100%
         }
@@ -714,14 +709,12 @@
             </div>
         </header>
         <div class="grid">
-            <!-- Stats -->
             <div class="stats">
                 <div class="stat"><div class="si g">✅</div><div><div class="sv g" id="sa">0</div><div class="sl">Autorizadas hoy</div></div></div>
                 <div class="stat"><div class="si b">🔔</div><div><div class="sv b" id="sp">0</div><div class="sl">Pendientes</div></div></div>
                 <div class="stat"><div class="si y">⏱</div><div><div class="sv y" id="se">0</div><div class="sl">Expiradas</div></div></div>
                 <div class="stat"><div class="si r">🚨</div><div><div class="sv r" id="sf">0</div><div class="sl">Fraudes</div></div></div>
             </div>
-            <!-- Semáforo -->
             <div class="sem">
                 <div class="ph"><div class="pt">Última transacción</div><div style="font-size:11px;color:var(--td);font-family:var(--m)">EN VIVO</div></div>
                 <div class="sc">
@@ -746,7 +739,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Feed -->
             <div class="ap">
                 <div class="ph"><div class="pt">Feed en tiempo real</div></div>
                 <div class="filters">
@@ -768,7 +760,6 @@
             </div>
         </div>
     </div>
-    <!-- Fraud modal -->
     <div class="fo" id="fo">
         <div class="fm">
             <div class="fi">🚨</div>
@@ -784,55 +775,36 @@
     </div>
     <script>
         // ════════════════════════════════════════════════════════════════════════
-        // CONFIGURACIÓN — cambia ATU_SERVER a la IP real de tu servidor
+        // ATU Dashboard - Conexión SignalR local (mismo origen)
         // ════════════════════════════════════════════════════════════════════════
-        const ATU_SERVER = "http://192.168.123.155:5059";
-
         const ST = { events: [], stats: { g: 0, b: 0, y: 0, r: 0 }, filter: 'all', ti: null, ts: null };
 
         // Reloj
         setInterval(() => document.getElementById('clk').textContent =
             new Date().toLocaleTimeString('es-MX', { hour12: false }), 1000);
 
-        // ── SignalR ───────────────────────────────────────────────────────────────────
+        // ── SignalR (usando ruta relativa para evitar CORS) ──
         const conn = new signalR.HubConnectionBuilder()
-            .withUrl(`${ATU_SERVER}/audit-hub`)
+            .withUrl("/audit-hub")
             .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
             .configureLogging(signalR.LogLevel.Warning)
             .build();
 
         conn.on("AuditEvent", e => handleEvent(e));
-
-        // Folios adelantados solicitados desde CargaEmbarques
-        conn.on("NuevoFolioAdelantado", n => handleEvent({
-            status: 'blue',
-            title: '🔔 Folio Adelantado Solicitado',
-            batchId: `${n.prodClave}-${n.reciboSug}-${n.tarimaSug}`,
-            supervisorId: n.responsable,
-            operatorId: n.embFolio,
-            message: `Folio ${n.embFolio} · ${n.producto} · Motivo: ${n.motivo}`,
-            timestamp: new Date().toISOString(),
-            eventId: crypto.randomUUID()
-        }));
-
         conn.on("FraudAlert", e => showFraud(e));
 
         conn.onreconnecting(() => { setConn(false, 'RECONECTANDO...'); });
-        conn.onreconnected(() => {
-            setConn(true, 'CONECTADO');
-            conn.invoke("SubscribeToAuditFeed").catch(console.error);
-        });
+        conn.onreconnected(() => { setConn(true, 'CONECTADO'); });
         conn.onclose(() => setConn(false, 'DESCONECTADO — recargue la página'));
 
         async function start() {
             try {
                 await conn.start();
                 setConn(true, 'CONECTADO');
-                await conn.invoke("SubscribeToAuditFeed");
                 document.querySelector('.emp2').innerHTML =
                     '<div style="font-size:40px;opacity:.3">📊</div>' +
                     '<div>Conectado · Esperando eventos...</div>' +
-                    `<div style="font-family:var(--m);font-size:11px">Hub: ${ATU_SERVER}/audit-hub</div>`;
+                    '<div style="font-family:var(--m);font-size:11px">SignalR hub: /audit-hub</div>';
             } catch (e) {
                 setConn(false, 'ERROR — ' + e.message);
                 setTimeout(start, 5000);
@@ -849,7 +821,6 @@
         function handleEvent(e) {
             e.timestamp = e.timestamp || new Date().toISOString();
             ST.events.unshift(e);
-            // Limitar a 500 eventos
             if (ST.events.length > 500) ST.events.length = 500;
 
             if (e.status === 'green') ST.stats.g++;
@@ -909,26 +880,24 @@
         function render() {
             const feed = document.getElementById('af');
             const list = ST.filter === 'all' ? ST.events : ST.events.filter(e => e.status === ST.filter);
-
             if (!list.length) {
                 feed.innerHTML = '<div class="emp2"><div style="font-size:40px;opacity:.3">🔍</div><div>Sin eventos para este filtro</div></div>';
                 return;
             }
-
             feed.innerHTML = list.slice(0, 150).map(e => `
-        <div class="ae">
-          <div class="estr ${e.status}"></div>
-          <div class="et">${ft(e.timestamp)}</div>
-          <div class="eb">
-            <div class="etit" style="color:${gc(e.status)}">${e.title}</div>
-            <div class="emeta">
-              <span class="bat">${e.batchId}</span>
-              <span class="sup">${e.supervisorId}</span>
-              <span>${e.operatorId}</span>
-            </div>
-          </div>
-          <div class="ebadge ${e.status}">${gl(e.status)}</div>
-        </div>`).join('');
+                <div class="ae">
+                  <div class="estr ${e.status}"></div>
+                  <div class="et">${ft(e.timestamp)}</div>
+                  <div class="eb">
+                    <div class="etit" style="color:${gc(e.status)}">${e.title}</div>
+                    <div class="emeta">
+                      <span class="bat">${e.batchId}</span>
+                      <span class="sup">${e.supervisorId}</span>
+                      <span>${e.operatorId}</span>
+                    </div>
+                  </div>
+                  <div class="ebadge ${e.status}">${gl(e.status)}</div>
+                </div>`).join('');
         }
 
         function fil(f, btn) {
@@ -948,6 +917,13 @@
             document.getElementById('fabat').textContent = e.batchId || '—';
             document.getElementById('fatim').textContent = new Date(e.timestamp || Date.now()).toLocaleString('es-MX');
             document.getElementById('fo').classList.add('vis');
+        }
+
+        // ── Registro del Service Worker para PWA (opcional pero recomendado) ──
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => console.log('✅ Service Worker registrado:', reg))
+                .catch(err => console.error('❌ Error al registrar SW:', err));
         }
     </script>
 </body>

@@ -9,142 +9,144 @@
 
     <ScrollView>
         <Grid
-            Padding="20"
-            RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+            Padding="28"
+            RowDefinitions="Auto,Auto,Auto,Auto"
+            RowSpacing="0"
             VerticalOptions="Center">
 
-            <!--  Logo/Título  -->
+            <!--  Logo  -->
             <VerticalStackLayout
                 Grid.Row="0"
-                Margin="0,0,0,30"
-                Spacing="10">
+                Margin="0,0,0,36"
+                Spacing="8">
                 <Border
                     Padding="20"
-                    BackgroundColor="#1a1f35"
+                    BackgroundColor="#0D1525"
                     HorizontalOptions="Center"
                     Stroke="#00BFFF"
-                    StrokeShape="RoundRectangle 30"
+                    StrokeShape="RoundRectangle 24"
                     StrokeThickness="2">
                     <Label
-                        FontSize="60"
+                        FontSize="52"
                         HorizontalOptions="Center"
                         Text="❄️" />
                 </Border>
-
                 <Label
                     FontAttributes="Bold"
-                    FontSize="28"
+                    FontSize="26"
                     HorizontalOptions="Center"
-                    Text="ATU Cámara Fría"
+                    Text="ATU · Cámara Fría"
                     TextColor="#00BFFF" />
-
                 <Label
-                    FontSize="14"
+                    FontSize="13"
                     HorizontalOptions="Center"
                     Text="Autorización Transaccional Única"
-                    TextColor="#666" />
+                    TextColor="#5A7FA8" />
             </VerticalStackLayout>
 
             <!--  Formulario  -->
-            <VerticalStackLayout Grid.Row="1" Spacing="15">
-                <Label
-                    FontSize="14"
-                    Text="Número de Empleado"
-                    TextColor="#AAA" />
+            <VerticalStackLayout Grid.Row="1" Spacing="14">
 
+                <Label
+                    FontSize="13"
+                    Text="Número de empleado"
+                    TextColor="#8AA0BC" />
                 <Border
-                    BackgroundColor="#1a1f35"
-                    Stroke="#333"
-                    StrokeShape="RoundRectangle 10"
-                    StrokeThickness="1">
+                    BackgroundColor="#0D1525"
+                    Stroke="#1E3050"
+                    StrokeShape="RoundRectangle 10">
                     <Entry
-                        Margin="10,15"
-                        FontSize="24"
+                        Margin="12,14"
+                        FontSize="22"
                         HorizontalTextAlignment="Center"
                         Keyboard="Default"
                         MaxLength="10"
                         Placeholder="Ej: 12345"
-                        PlaceholderColor="#555"
+                        PlaceholderColor="#3A5070"
                         Text="{Binding EmployeeNumber}"
                         TextColor="White" />
                 </Border>
-            </VerticalStackLayout>
 
-            <!--  Configuración de servidor  -->
-            <Grid
-                Grid.Row="2"
-                Margin="0,15,0,0"
-                RowDefinitions="Auto,Auto">
                 <Label
-                    Grid.Row="0"
+                    FontSize="13"
+                    Text="Contraseña"
+                    TextColor="#8AA0BC" />
+                <Border
+                    BackgroundColor="#0D1525"
+                    Stroke="#1E3050"
+                    StrokeShape="RoundRectangle 10">
+                    <Entry
+                        Margin="12,14"
+                        FontSize="18"
+                        HorizontalTextAlignment="Center"
+                        IsPassword="True"
+                        Placeholder="Contraseña de autorización"
+                        PlaceholderColor="#3A5070"
+                        Text="{Binding Password}"
+                        TextColor="White" />
+                </Border>
+
+                <!--  URL servidor (colapsable)  -->
+                <Label
                     FontSize="12"
                     HorizontalOptions="Center"
-                    Text="⚙️ Toca para cambiar URL del Servidor"
-                    TextColor="#666">
+                    Text="⚙ Configurar servidor"
+                    TextColor="#3A5070">
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding ToggleServerConfigCommand}" />
                     </Label.GestureRecognizers>
                 </Label>
 
                 <Border
-                    Grid.Row="1"
-                    Padding="10"
-                    BackgroundColor="#1a1f35"
+                    BackgroundColor="#0D1525"
                     IsVisible="{Binding ShowServerConfig}"
-                    Stroke="#333"
-                    StrokeShape="RoundRectangle 10">
+                    Stroke="#1E3050"
+                    StrokeShape="RoundRectangle 8">
                     <Entry
-                        FontSize="14"
+                        Margin="10,10"
+                        FontSize="13"
                         Keyboard="Url"
-                        Placeholder="http://192.168.1.100:5001"
-                        PlaceholderColor="#555"
+                        Placeholder="http://192.168.x.x:5059"
+                        PlaceholderColor="#3A5070"
                         Text="{Binding ServerUrl}"
                         TextColor="#00BFFF" />
                 </Border>
-            </Grid>
 
-            <!--  Botón Login  -->
-            <Button
-                Grid.Row="3"
-                Margin="0,20,0,0"
-                BackgroundColor="#00BFFF"
-                Command="{Binding LoginCommand}"
-                CornerRadius="10"
-                FontAttributes="Bold"
-                FontSize="18"
-                HeightRequest="55"
-                IsEnabled="{Binding IsNotBusy}"
-                Text="Iniciar Sesión"
-                TextColor="Black" />
+                <Button
+                    Margin="0,8,0,0"
+                    BackgroundColor="#00BFFF"
+                    Command="{Binding LoginCommand}"
+                    CornerRadius="12"
+                    FontAttributes="Bold"
+                    FontSize="17"
+                    HeightRequest="52"
+                    IsEnabled="{Binding IsNotBusy}"
+                    Text="Iniciar Sesión"
+                    TextColor="Black" />
 
-            <!--  Indicador de carga y errores  -->
-            <VerticalStackLayout Grid.Row="4" Spacing="10">
                 <ActivityIndicator
+                    HorizontalOptions="Center"
                     IsRunning="{Binding IsBusy}"
                     IsVisible="{Binding IsBusy}"
                     Color="#00BFFF" />
 
                 <Label
                     FontSize="14"
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
                     IsVisible="{Binding HasError}"
                     LineBreakMode="WordWrap"
                     Text="{Binding ErrorMessage}"
                     TextColor="#FF4444" />
-
-                <Label
-                    Margin="0,20,0,0"
-                    FontSize="12"
-                    HorizontalOptions="Center"
-                    Text="🔒 Se requerirá autenticación biométrica"
-                    TextColor="#666" />
-
-                <Label
-                    FontSize="10"
-                    HorizontalOptions="Center"
-                    Text="v1.0.0 | ATU Core"
-                    TextColor="#444" />
             </VerticalStackLayout>
 
+            <Label
+                Grid.Row="3"
+                Margin="0,24,0,0"
+                FontSize="11"
+                HorizontalOptions="Center"
+                Text="Solo personal autorizado en Tb_Autoriza_OdeP"
+                TextColor="#2A4060" />
         </Grid>
     </ScrollView>
 </ContentPage>

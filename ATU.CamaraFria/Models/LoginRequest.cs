@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace ATU.CamaraFria.Models;
+﻿namespace ATU.CamaraFria.Models;
 
 public class LoginRequest
 {
     public string EmployeeNumber { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
     public string DeviceFingerprint { get; set; } = string.Empty;
     public string DeviceName { get; set; } = string.Empty;
 }

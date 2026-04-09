@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Text.Json;
-using System.Threading.Tasks;
 using ATU.CamaraFria.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Networking;
@@ -27,6 +24,9 @@ public interface IATUApi
     [Post("/api/otp/request")]
     Task<GenericResponse> CreateFolioRequest([Body] FolioAdelantatadoRequest request);
 
+    [Get("/api/otp/solicitudes-pendientes")]
+    Task<SolicitudesResponse> GetSolicitudesPendientes();
+
     [Post("/api/auth/login")]
     Task<LoginResponse> Login([Body] LoginRequest request);
 
@@ -34,7 +34,7 @@ public interface IATUApi
     Task<HealthResponse> HealthCheck();
 }
 
-// ── DTOs adicionales ──────────────────────────────────────────────────────────
+// ── DTOs ──────────────────────────────────────────────────────────────────────
 
 public class ValidateOTPRequest
 {
@@ -82,21 +82,6 @@ public class GenericResponse
     public string Message { get; set; } = string.Empty;
 }
 
-public class EnrollDeviceRequest
-{
-    public string SupervisorId { get; set; } = string.Empty;
-    public string DeviceFingerprint { get; set; } = string.Empty;
-    public string DeviceName { get; set; } = string.Empty;
-    public string Platform { get; set; } = string.Empty;
-}
-
-public class EnrollResponse
-{
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public string? DeviceSecret { get; set; }
-}
-
 public class HealthResponse
 {
     public string Status { get; set; } = string.Empty;
@@ -107,7 +92,6 @@ public class HealthResponse
 
 public class ATUApiClient
 {
-    /// <summary>Segundos de vida del OTP — coincide con el backend.</summary>
     public const int OtpTtlSeconds = 30;
 
     private IATUApi _api;
@@ -125,9 +109,7 @@ public class ATUApiClient
         _syncQueue = syncQueue;
         _logger = logger;
         _deviceFingerprint = fingerprintService.GetFingerprint();
-
-        var baseUrl = Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5059");
-        _api = BuildApi(baseUrl);
+        _api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5059"));
     }
 
     public void SetBaseUrl(string url)
@@ -143,12 +125,24 @@ public class ATUApiClient
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
         });
 
-    // ── Generar OTP (flujo normal — etiqueta verde) ───────────────────────────
+    // ── Login ─────────────────────────────────────────────────────────────────
+
+    public async Task<LoginResponse?> LoginAsync(LoginRequest request)
+    {
+        request.DeviceFingerprint = _deviceFingerprint;
+        try { return await _api.Login(request); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en login");
+            return new LoginResponse { Success = false, Message = $"Error de conexión: {ex.Message}" };
+        }
+    }
+
+    // ── Generar OTP normal (etiqueta verde) ───────────────────────────────────
 
     public async Task<OTPResponse?> GenerateOTPAsync(OTPRequest request)
     {
         request.DeviceFingerprint = _deviceFingerprint;
-
         try
         {
             if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
@@ -157,37 +151,24 @@ public class ATUApiClient
                 return new OTPResponse
                 {
                     Success = false,
-                    Message = "Sin conexión. La solicitud se sincronizará cuando haya red.",
+                    Message = "Sin conexión. La solicitud se guardará para sincronizar.",
                     Errors = new List<string> { "OFFLINE_MODE" }
                 };
             }
-
             var response = await _api.GenerateOTP(request);
-            if (response.Success && response.Data != null)
-                await SaveLastOTPAsync(response.Data);
-
+            if (response.Success && response.Data != null) await SaveLastOTPAsync(response.Data);
             return response;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Error de conexión al generar OTP");
+            _logger.LogError(ex, "Error HTTP al generar OTP");
             await _syncQueue.EnqueueAsync(SyncType.OTPGeneration, request);
-            return new OTPResponse
-            {
-                Success = false,
-                Message = "Error de conexión. Se guardará para sincronizar.",
-                Errors = new List<string> { ex.Message }
-            };
+            return new OTPResponse { Success = false, Message = "Error de red.", Errors = new List<string> { ex.Message } };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error inesperado al generar OTP");
-            return new OTPResponse
-            {
-                Success = false,
-                Message = $"Error: {ex.Message}",
-                Errors = new List<string> { ex.Message }
-            };
+            return new OTPResponse { Success = false, Message = ex.Message, Errors = new List<string> { ex.Message } };
         }
     }
 
@@ -198,49 +179,49 @@ public class ATUApiClient
         try
         {
             if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
-                return new OTPResponse
-                {
-                    Success = false,
-                    Message = "Sin conexión. La generación de OTP requiere conexión.",
-                    Errors = new List<string> { "OFFLINE_MODE" }
-                };
+                return new OTPResponse { Success = false, Message = "Sin conexión. El OTP requiere conexión.", Errors = new List<string> { "OFFLINE_MODE" } };
 
-            var request = new GenerateOtpFolioRequest
+            return await _api.GenerateOTPForFolio(new GenerateOtpFolioRequest
             {
                 EmbFolio = embFolio,
                 SupervisorId = supervisorId,
                 DeviceFingerprint = _deviceFingerprint
-            };
-
-            return await _api.GenerateOTPForFolio(request);
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al generar OTP para folio {Folio}", embFolio);
-            return new OTPResponse
-            {
-                Success = false,
-                Message = $"Error: {ex.Message}",
-                Errors = new List<string> { ex.Message }
-            };
+            _logger.LogError(ex, "Error generando OTP para folio {Folio}", embFolio);
+            return new OTPResponse { Success = false, Message = $"Error: {ex.Message}", Errors = new List<string> { ex.Message } };
+        }
+    }
+
+    // ── Obtener solicitudes pendientes ────────────────────────────────────────
+
+    public async Task<List<SolicitudVm>> GetSolicitudesPendientesAsync()
+    {
+        try
+        {
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+                return new List<SolicitudVm>();
+
+            var response = await _api.GetSolicitudesPendientes();
+            return response?.Data ?? new List<SolicitudVm>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener solicitudes pendientes");
+            return new List<SolicitudVm>();
         }
     }
 
     // ── Validar OTP ───────────────────────────────────────────────────────────
 
-    public async Task<ValidationResponse?> ValidateOTPAsync(
-        string code, string batchId, string supervisorId)
+    public async Task<ValidationResponse?> ValidateOTPAsync(string code, string batchId, string supervisorId)
     {
         try
         {
             if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
-                return new ValidationResponse
-                {
-                    Success = false,
-                    Status = "Red",
-                    Message = "Sin conexión. No se puede validar el OTP.",
-                    IsAuthorized = false
-                };
+                return new ValidationResponse { Success = false, Status = "Red", Message = "Sin conexión.", IsAuthorized = false };
 
             return await _api.ValidateOTP(new ValidateOTPRequest
             {
@@ -253,33 +234,7 @@ public class ATUApiClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al validar OTP");
-            return new ValidationResponse
-            {
-                Success = false,
-                Status = "Red",
-                Message = $"Error de validación: {ex.Message}",
-                IsAuthorized = false
-            };
-        }
-    }
-
-    // ── Login ─────────────────────────────────────────────────────────────────
-
-    public async Task<LoginResponse?> LoginAsync(LoginRequest request)
-    {
-        request.DeviceFingerprint = _deviceFingerprint;
-        try
-        {
-            return await _api.Login(request);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error en login");
-            return new LoginResponse
-            {
-                Success = false,
-                Message = $"Error de conexión: {ex.Message}"
-            };
+            return new ValidationResponse { Success = false, Status = "Red", Message = ex.Message, IsAuthorized = false };
         }
     }
 
@@ -289,8 +244,8 @@ public class ATUApiClient
     {
         try
         {
-            var response = await _api.HealthCheck();
-            return response?.Status?.Equals("Healthy", StringComparison.OrdinalIgnoreCase) == true;
+            var r = await _api.HealthCheck();
+            return r?.Status?.Equals("Healthy", StringComparison.OrdinalIgnoreCase) == true;
         }
         catch { return false; }
     }
@@ -299,8 +254,7 @@ public class ATUApiClient
 
     private static async Task SaveLastOTPAsync(OTPData otp)
     {
-        var json = JsonSerializer.Serialize(otp);
-        Preferences.Set("LAST_OTP", json);
+        Preferences.Set("LAST_OTP", JsonSerializer.Serialize(otp));
         Preferences.Set("LAST_OTP_TIME", otp.GeneratedAt.ToBinary());
         await Task.CompletedTask;
     }

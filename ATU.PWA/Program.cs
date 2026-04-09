@@ -10,7 +10,8 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapHub<AuditHub>("/hubs/audit");
+//app.MapHub<AuditHub>("/hubs/audit");
+app.MapHub<AuditHub>("/audit-hub");
 
 app.MapGet("/test-event", async (IHubContext<AuditHub> hub) =>
 {

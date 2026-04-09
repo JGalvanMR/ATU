@@ -1001,7 +1001,7 @@
     </div>
 
     <script>
-    // ── State ──────────────────────────────────────────────────────────────────────
+        // ── State ──────────────────────────────────────────────────────────────────────
         const state = {
             events: [],
             stats: { authorized: 0, expired: 0, fraud: 0, pending: 0 },
@@ -1168,20 +1168,20 @@
             }
 
             const html = filtered.slice(0, 100).map(evt => `
-        <div class="audit-event">
-          <div class="event-stripe ${evt.status}"></div>
-          <div class="event-time">${formatTime(evt.timestamp)}</div>
-          <div class="event-body">
-            <div class="event-title" style="color:${getColor(evt.status)}">${evt.title}</div>
-            <div class="event-meta">
-              <span class="batch">${evt.batchId}</span>
-              <span class="supervisor">${evt.supervisorId}</span>
-              <span>${evt.operatorId}</span>
+            <div class="audit-event">
+              <div class="event-stripe ${evt.status}"></div>
+              <div class="event-time">${formatTime(evt.timestamp)}</div>
+              <div class="event-body">
+                <div class="event-title" style="color:${getColor(evt.status)}">${evt.title}</div>
+                <div class="event-meta">
+                  <span class="batch">${evt.batchId}</span>
+                  <span class="supervisor">${evt.supervisorId}</span>
+                  <span>${evt.operatorId}</span>
+                </div>
+              </div>
+              <div class="event-badge ${evt.status}">${getStatusLabel(evt.status)}</div>
             </div>
-          </div>
-          <div class="event-badge ${evt.status}">${getStatusLabel(evt.status)}</div>
-        </div>
-      `).join('');
+          `).join('');
 
             feed.innerHTML = html;
         }

@@ -5,25 +5,38 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:ATU.CamaraFria.Views"
     BackgroundColor="#070B18"
-    FlyoutBehavior="Disabled">
+    Shell.FlyoutBehavior="Disabled">
 
     <TabBar
         Shell.TabBarBackgroundColor="#0a0e1a"
         Shell.TabBarForegroundColor="#00BFFF"
         Shell.TabBarUnselectedColor="#555">
-
+        <!--
+            Tab 1: Escanear
+            El supervisor de cámaras escanea la etiqueta verde del pallet
+            con su dispositivo Unitech PA768 o Honeywell ScanPal EDA-50.
+            Ruta //Scan usada por App.xaml.cs al recibir notificación SignalR.
+        -->
         <ShellContent
             Title="Escanear"
             ContentTemplate="{DataTemplate views:OTPDisplayPage}"
             Icon="scan_icon.svg"
             Route="Scan" />
-
+        <!--
+            Tab 2: Solicitudes
+            Lista de folios adelantados pendientes de autorizar.
+            Reemplaza el Tab "Pendientes" anterior.
+            Al tocar AUTORIZAR → navega a //Scan con el folio precargado.
+        -->
         <ShellContent
-            Title="Pendientes"
-            ContentTemplate="{DataTemplate views:PendingSyncPage}"
+            Title="Solicitudes"
+            ContentTemplate="{DataTemplate views:SolicitudesPage}"
             Icon="sync_icon.svg"
-            Route="Pending" />
-
+            Route="Solicitudes" />
+        <!--
+            Tab 3: Configuración
+            URL del servidor, info de sesión, cerrar sesión.
+        -->
         <ShellContent
             Title="Configuración"
             ContentTemplate="{DataTemplate views:SettingsPage}"

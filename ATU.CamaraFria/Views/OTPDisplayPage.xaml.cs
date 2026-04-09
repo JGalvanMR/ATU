@@ -9,7 +9,6 @@ namespace ATU.CamaraFria.Views;
 public partial class OTPDisplayPage : ContentPage
 {
     private readonly OTPViewModel _viewModel;
-    private bool _procesandoCodigo = false; // evita disparos dobles de la cámara
 
     public OTPDisplayPage(OTPViewModel viewModel)
     {
@@ -17,61 +16,79 @@ public partial class OTPDisplayPage : ContentPage
         BindingContext = _viewModel = viewModel;
     }
 
-    // ── Callback de ZXing cuando detecta un código ───────────────────────────
+    // ── Callback de ZXing — funciona para CameraScanner y CameraConfirm ──────
 
     private void OnBarcodesDetected(object sender, BarcodeDetectionEventArgs e)
     {
-        // ZXing dispara en hilo de cámara, lo pasamos al hilo UI
         var primer = e.Results.FirstOrDefault();
         if (primer == null) return;
 
-        MainThread.BeginInvokeOnMainThread(async () =>
+        MainThread.BeginInvokeOnMainThread(() =>
         {
-            // Ignorar si ya estamos procesando o mostrando OTP
-            if (_procesandoCodigo || _viewModel.ShowOTP) return;
-            _procesandoCodigo = true;
-
-            // Pausar detección mientras procesamos
-            CameraScanner.IsDetecting = false;
+            // Pausar la cámara que detectó
+            if (sender is ZXing.Net.Maui.Controls.CameraBarcodeReaderView cam)
+                cam.IsDetecting = false;
 
             _viewModel.OnBarcodeDetected(primer.Value, primer.Format);
-
-            // Reactivar después de 3 segundos si no se generó OTP
-            await Task.Delay(3000);
-            if (!_viewModel.ShowOTP)
-                CameraScanner.IsDetecting = true;
-
-            _procesandoCodigo = false;
         });
     }
 
-    // ── Ciclo de vida de la página ────────────────────────────────────────────
+    // ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        CameraScanner.IsDetecting = true;
-        ActualizarIndicadorConexion();
-        ActualizarFolioActivo();
+        ActualizarCamaras();
+        ActualizarConexion();
     }
 
     protected override void OnDisappearing()
     {
+        // Detener ambas cámaras al salir
         CameraScanner.IsDetecting = false;
-        _viewModel.ResetScanCommand.Execute(null);
+        CameraConfirm.IsDetecting = false;
         base.OnDisappearing();
     }
 
-    private void ActualizarIndicadorConexion()
+    private void ActualizarCamaras()
     {
-        var conectado = Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
-        ConnectionIndicator.BackgroundColor = conectado ? Colors.LimeGreen : Colors.Red;
+        CameraScanner.IsDetecting = _viewModel.ShowScanNormal;
+        CameraConfirm.IsDetecting = _viewModel.ShowConfirmarFolio;
+
+        // Reactivar cámara si el ViewModel cambia de panel
+        _viewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(_viewModel.ShowScanNormal))
+            {
+                CameraScanner.IsDetecting = _viewModel.ShowScanNormal;
+                CameraConfirm.IsDetecting = false;
+            }
+            else if (args.PropertyName == nameof(_viewModel.ShowConfirmarFolio))
+            {
+                CameraConfirm.IsDetecting = _viewModel.ShowConfirmarFolio;
+                CameraScanner.IsDetecting = false;
+            }
+            else if (args.PropertyName == nameof(_viewModel.ShowOTP))
+            {
+                // Detener ambas cámaras cuando se muestra el OTP
+                if (_viewModel.ShowOTP)
+                {
+                    CameraScanner.IsDetecting = false;
+                    CameraConfirm.IsDetecting = false;
+                }
+            }
+            else if (args.PropertyName == nameof(_viewModel.PalletVerificado)
+                  && !_viewModel.PalletVerificado)
+            {
+                // Si el pallet no coincidió, reactivar confirmación
+                CameraConfirm.IsDetecting = _viewModel.ShowConfirmarFolio;
+            }
+        };
     }
 
-    private void ActualizarFolioActivo()
+    private void ActualizarConexion()
     {
-        LblFolioActivo.Text = string.IsNullOrEmpty(_viewModel.EmbFolio)
-            ? ""
-            : $"Folio: {_viewModel.EmbFolio}";
+        var ok = Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
+        ConnectionIndicator.BackgroundColor = ok ? Colors.LimeGreen : Colors.Red;
     }
 }

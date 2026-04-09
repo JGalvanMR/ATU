@@ -84,7 +84,7 @@ public partial class App : Application
         {
             vm.CargarFolioAdelantado(notif.EmbFolio, notif.ProdClave,
                                      notif.ReciboSug, notif.TarimaSug);
-            await vm.GenerateOTPForFolioCommand.ExecuteAsync(null);
+            await vm.GenerateOTPForFolioCommandCommand.ExecuteAsync(null);
         }
     }
 

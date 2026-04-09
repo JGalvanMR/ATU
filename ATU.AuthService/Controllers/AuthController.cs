@@ -13,117 +13,106 @@ public class AuthController : ControllerBase
     private readonly IEncryptionService _encryption;
     private readonly string _connStr;
 
-    public AuthController(
-        IDeviceRepository devices,
-        IEncryptionService encryption,
-        IConfiguration configuration)
+    public AuthController(IDeviceRepository d, IEncryptionService e, IConfiguration cfg)
     {
-        _devices = devices;
-        _encryption = encryption;
-        _connStr = configuration.GetConnectionString("SqlServer") ?? string.Empty;
+        _devices = d;
+        _encryption = e;
+        _connStr = cfg.GetConnectionString("SqlServer") ?? string.Empty;
     }
 
     public class LoginMobileRequest
     {
         public string EmployeeNumber { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
         public string DeviceFingerprint { get; set; } = string.Empty;
         public string DeviceName { get; set; } = string.Empty;
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginMobileRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginMobileRequest req)
     {
-        if (string.IsNullOrWhiteSpace(request.EmployeeNumber))
+        if (string.IsNullOrWhiteSpace(req.EmployeeNumber))
             return Ok(Fail("Número de empleado requerido."));
+        if (string.IsNullOrWhiteSpace(req.Password))
+            return Ok(Fail("Contraseña requerida."));
+        if (string.IsNullOrWhiteSpace(_connStr))
+            return Ok(Fail("Cadena de conexión SQL Server no configurada en el servidor ATU."));
 
-        // ── 1. Validar contra Tb_Autoriza_OdeP ───────────────────────────────
-        string supervisorNombre;
         try
         {
-            if (string.IsNullOrWhiteSpace(_connStr))
-                return Ok(Fail("Cadena de conexión SQL Server no configurada."));
-
             await using var conn = new SqlConnection(_connStr);
 
-            // Busca por número de empleado (campo 'usuario') con permiso 'EM'
+            // Valida empleado + contraseña (igual que CargaEmbarques original)
             var row = await conn.QueryFirstOrDefaultAsync<dynamic>(@"
                 SELECT usuario, obs
                 FROM   Tb_Autoriza_OdeP
                 WHERE  LTRIM(RTRIM(usuario)) = @emp
-                  AND  LTRIM(RTRIM(clave))   = 'EM'",
-                new { emp = request.EmployeeNumber.Trim() });
+                  AND  LTRIM(RTRIM(clave))   = 'EM'
+                  AND  (LTRIM(RTRIM(password))      = @pwd
+                     OR LTRIM(RTRIM(passwordlineal)) = @pwd)",
+                new { emp = req.EmployeeNumber.Trim(), pwd = req.Password.Trim().ToUpper() });
 
             if (row == null)
-                return Ok(Fail("Empleado no encontrado o sin permiso de autorización."));
+                return Ok(Fail("Credenciales incorrectas o sin permiso de autorización."));
 
-            supervisorNombre = ((string?)row.obs)?.Trim() ?? request.EmployeeNumber;
-        }
-        catch (Exception ex)
-        {
-            return Ok(Fail($"Error de base de datos: {ex.Message}"));
-        }
+            string nombre = ((string?)row.obs)?.Trim() ?? req.EmployeeNumber;
 
-        // ── 2. Auto-enrolar dispositivo (o reusar el existente) ───────────────
-        var device = await _devices.GetByIdAsync(request.EmployeeNumber.Trim());
-
-        if (device == null)
-        {
-            // Primer login en este dispositivo → crear enrolamiento automático
-            var secret = Convert.ToBase64String(
-                System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
-
-            device = new EnrolledDevice
+            // Auto-enrolamiento del dispositivo
+            var device = await _devices.GetByIdAsync(req.EmployeeNumber.Trim());
+            if (device == null)
             {
-                OperatorId = request.EmployeeNumber.Trim(),
-                Fingerprint = request.DeviceFingerprint,
-                EncryptedSecret = _encryption.Encrypt(secret),
-                PushToken = string.Empty,
-                ColdStorageZoneId = string.Empty,
-                IsActive = true,
-                EnrolledAt = DateTimeOffset.UtcNow
-            };
-            await _devices.AddAsync(device);
-        }
-        else if (!string.IsNullOrEmpty(request.DeviceFingerprint)
-              && device.Fingerprint != request.DeviceFingerprint)
-        {
-            // El mismo empleado inició sesión en un dispositivo diferente → actualizar
-            var updated = new EnrolledDevice
+                var secret = Convert.ToBase64String(
+                    System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+                await _devices.AddAsync(new EnrolledDevice
+                {
+                    OperatorId = req.EmployeeNumber.Trim(),
+                    Fingerprint = req.DeviceFingerprint,
+                    EncryptedSecret = _encryption.Encrypt(secret),
+                    PushToken = string.Empty,
+                    ColdStorageZoneId = string.Empty,
+                    IsActive = true,
+                    EnrolledAt = DateTimeOffset.UtcNow
+                });
+            }
+            else if (!string.IsNullOrEmpty(req.DeviceFingerprint)
+                  && device.Fingerprint != req.DeviceFingerprint)
             {
-                OperatorId = device.OperatorId,
-                Fingerprint = request.DeviceFingerprint,
-                EncryptedSecret = device.EncryptedSecret,
-                PushToken = device.PushToken,
-                ColdStorageZoneId = device.ColdStorageZoneId,
-                IsActive = true,
-                EnrolledAt = device.EnrolledAt
-            };
-            await _devices.UpdateAsync(updated);
-        }
+                await _devices.UpdateAsync(new EnrolledDevice
+                {
+                    OperatorId = device.OperatorId,
+                    Fingerprint = req.DeviceFingerprint,
+                    EncryptedSecret = device.EncryptedSecret,
+                    PushToken = device.PushToken,
+                    ColdStorageZoneId = device.ColdStorageZoneId,
+                    IsActive = true,
+                    EnrolledAt = device.EnrolledAt
+                });
+            }
 
-        // ── 3. Responder ──────────────────────────────────────────────────────
-        return Ok(new
-        {
-            success = true,
-            message = "Login exitoso",
-            data = new
+            return Ok(new
             {
-                token = $"atu-token-{request.EmployeeNumber}-{Guid.NewGuid():N}",
-                supervisorId = request.EmployeeNumber.Trim(),
-                supervisorName = supervisorNombre,
-                role = "SupervisorCamaras",
-                expiresAt = DateTime.UtcNow.AddHours(8),
-                requiresBiometricEnrollment = false,
-                isDeviceEnrolled = true
-            },
-            errors = Array.Empty<string>()
-        });
+                success = true,
+                message = "Login exitoso",
+                data = new
+                {
+                    token = $"atu-{req.EmployeeNumber}-{Guid.NewGuid():N}",
+                    supervisorId = req.EmployeeNumber.Trim(),
+                    supervisorName = nombre,
+                    role = "SupervisorCamaras",
+                    expiresAt = DateTime.UtcNow.AddHours(8),
+                    requiresBiometricEnrollment = false,
+                    isDeviceEnrolled = true
+                },
+                errors = Array.Empty<string>()
+            });
+        }
+        catch (Exception ex) { return Ok(Fail($"Error del servidor: {ex.Message}")); }
     }
 
-    private static object Fail(string message) => new
+    private static object Fail(string msg) => new
     {
         success = false,
-        message,
+        message = msg,
         data = (object?)null,
         errors = new[] { "INVALID_CREDENTIALS" }
     };
