@@ -1,29 +1,40 @@
-﻿using System.Text.Json;
-using ATU.CamaraFria.Models;
+﻿using ATU.CamaraFria.Models;
 using ATU.CamaraFria.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
-using ZXing.Net.Maui;
 
 namespace ATU.CamaraFria.ViewModels;
 
+/// <summary>
+/// ViewModel para la pantalla de generación de OTP.
+/// El scanner Unitech/Honeywell actúa como teclado: escribe en el Entry y pulsa Enter.
+/// No se usa cámara — el Entry recibe el foco automáticamente.
+/// </summary>
 public partial class OTPViewModel : BaseViewModel
 {
     private readonly ATUApiClient _apiClient;
-    private readonly IScannerService _scannerService;
+    private readonly IScannerService _scanner;
 
+    // ── Paneles (solo uno visible a la vez) ─────────────────────────────────
     [ObservableProperty] private bool _showScanNormal = true;
     [ObservableProperty] private bool _showConfirmarFolio;
     [ObservableProperty] private bool _showOTP;
 
-    [ObservableProperty] private string _scannedCode = string.Empty;
-    [ObservableProperty] private string _statusMessage = "Apunta la cámara a la etiqueta verde del pallet";
+    // ── Panel 1: Escaneo libre ───────────────────────────────────────────────
+    [ObservableProperty] private string _codigoEscaneado = string.Empty;
+    [ObservableProperty] private string _statusMessage = "Escanea la etiqueta verde del pallet";
     [ObservableProperty] private string _statusColor = "#8AA0BC";
-    [ObservableProperty] private bool _isGenerating;
+    [ObservableProperty] private bool _isProcessing;
 
+    // ── Panel 2: Confirmar pallet (folio adelantado) ─────────────────────────
+    [ObservableProperty] private string _codigoPalletConfirmar = string.Empty;
+    [ObservableProperty] private string _instruccionConfirmar = string.Empty;
+    [ObservableProperty] private string _palletConfirmadoTexto = string.Empty;
+    [ObservableProperty] private bool _palletConfirmado;
+
+    // Datos del folio adelantado
     [ObservableProperty] private string _embFolio = string.Empty;
     [ObservableProperty] private string _batchId = string.Empty;
     [ObservableProperty] private string _infoProducto = string.Empty;
@@ -31,179 +42,316 @@ public partial class OTPViewModel : BaseViewModel
     [ObservableProperty] private string _motivoSolicitud = string.Empty;
     [ObservableProperty] private bool _esFolioAdelantado;
 
+    // ── Panel 3: OTP ─────────────────────────────────────────────────────────
     [ObservableProperty] private string _otpCode = string.Empty;
-    [ObservableProperty] private int _countdownSeconds = 30;
     [ObservableProperty] private string _countdownText = "00:30";
-
-    [ObservableProperty] private string _instruccionConfirmar = "Escanea el código QR del pallet físico";
-    [ObservableProperty] private bool _palletVerificado;
-    [ObservableProperty] private string _palletVerificadoTexto = string.Empty;
+    [ObservableProperty] private int _countdownSeconds = 30;
 
     private string _supervisorId = string.Empty;
-    private CancellationTokenSource? _countdownCts;
-    private LabelScanData? _lastScanData;
-    private bool _procesando;
+    private CancellationTokenSource? _cts;
 
-    public OTPViewModel(ATUApiClient apiClient, IScannerService scannerService)
+    // Evento para pedir foco al Entry desde la Page
+    public event Action? SolicitarFocoEntrada;
+    public event Action? SolicitarFocoConfirmar;
+
+    public OTPViewModel(ATUApiClient apiClient, IScannerService scanner)
     {
         _apiClient = apiClient;
-        _scannerService = scannerService;
+        _scanner = scanner;
         _supervisorId = Preferences.Get("SUPERVISOR_ID", string.Empty);
     }
 
+    // ── Llamado desde SolicitudesPage cuando el supervisor toca AUTORIZAR ─────
     public void CargarFolioAdelantado(
         string embFolio, string prodClave, string reciboSug, string tarimaSug,
         string producto = "", string responsable = "", string motivo = "")
     {
         EmbFolio = embFolio;
-        BatchId = $"{prodClave.Trim()}-{reciboSug.Trim()}-{tarimaSug.Trim()}";
-        InfoProducto = $"{prodClave.Trim()} — {producto}";
-        InfoSolicitante = $"Solicitó: {responsable}";
-        MotivoSolicitud = $"Motivo: {motivo}";
+        BatchId = _scanner.FormatearBatchId(prodClave, reciboSug, tarimaSug);
+        InfoProducto = $"{prodClave.Trim()} — {producto.Trim()}";
+        InfoSolicitante = responsable.Trim();
+        MotivoSolicitud = motivo.Trim();
         EsFolioAdelantado = true;
-        PalletVerificado = false;
-        PalletVerificadoTexto = string.Empty;
-        MostrarPantallaConfirmar();
-    }
+        PalletConfirmado = false;
+        PalletConfirmadoTexto = string.Empty;
+        CodigoPalletConfirmar = string.Empty;
 
-    public void OnBarcodeDetected(string code, BarcodeFormat format)
-    {
-        if (_procesando) return;
-        MainThread.BeginInvokeOnMainThread(async () =>
-        {
-            _procesando = true;
-            if (ShowScanNormal)
-                await ProcesarCodigoNormalAsync(code, format);
-            else if (ShowConfirmarFolio && !PalletVerificado)
-                await ConfirmarPalletFisicoAsync(code, format);
-            await Task.Delay(2000);
-            _procesando = false;
-        });
-    }
-
-    [RelayCommand]
-    private async Task ProcessScannedCodeAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(ScannedCode))
-            await ProcesarCodigoNormalAsync(ScannedCode, BarcodeFormat.QrCode);
-    }
-
-    private async Task ProcesarCodigoNormalAsync(string code, BarcodeFormat format)
-    {
-        if (!_scannerService.IsValidLabelCode(code))
-        { StatusMessage = "Etiqueta no reconocida — intenta de nuevo"; StatusColor = "#FF4444"; return; }
-
-        IsGenerating = true; StatusMessage = "Procesando etiqueta..."; StatusColor = "#FFAA00";
-        try
-        {
-            _lastScanData = _scannerService.ParseScannedCode(code, format);
-            BatchId = _lastScanData.ExtractedBatchId;
-            EmbFolio = string.Empty; EsFolioAdelantado = false;
-            StatusMessage = $"Lote: {_scannerService.FormatBatchIdForDisplay(BatchId)}";
-            StatusColor = "#44FF44";
-            await GenerarOTPNormalAsync();
-        }
-        catch (Exception ex) { StatusMessage = $"Error: {ex.Message}"; StatusColor = "#FF4444"; }
-        finally { IsGenerating = false; }
-    }
-
-    private async Task GenerarOTPNormalAsync()
-    {
-        var response = await _apiClient.GenerateOTPAsync(new OTPRequest
-        { SupervisorId = _supervisorId, BatchId = BatchId, LabelData = _lastScanData });
-        if (response?.Success == true && response.Data != null)
-            MostrarOTP(response.Data.Code, response.Data.SecondsRemaining);
-        else { StatusMessage = response?.Message ?? "Error al generar OTP"; StatusColor = "#FF4444"; }
-    }
-
-    private void MostrarPantallaConfirmar()
-    {
-        ShowScanNormal = false; ShowConfirmarFolio = true; ShowOTP = false;
         InstruccionConfirmar =
-            $"Escanea el QR o código de barras del pallet físico\n" +
-            $"para confirmar antes de autorizar.\n\n" +
-            $"Lote esperado: {BatchId}";
+            $"Lote esperado: {BatchId}\n\n" +
+            "Escanea el código del pallet físico para confirmar antes de generar el OTP.";
+
+        MostrarPanel(Panel.ConfirmarFolio);
+        SolicitarFocoConfirmar?.Invoke();
     }
 
-    private async Task ConfirmarPalletFisicoAsync(string code, BarcodeFormat format)
+    // ── Panel 1: El scanner escribe en CodigoEscaneado y pulsa Enter ──────────
+    [RelayCommand]
+    private async Task ProcesarCodigoEscaneadoAsync()
     {
+        var raw = CodigoEscaneado.Trim();
+        CodigoEscaneado = string.Empty; // limpiar inmediatamente para el próximo escaneo
+
+        if (string.IsNullOrEmpty(raw)) return;
+        if (!_scanner.EsCodigoValido(raw))
+        {
+            StatusMessage = "Etiqueta no reconocida — vuelve a escanear";
+            StatusColor = "#FF4444";
+            SolicitarFocoEntrada?.Invoke();
+            return;
+        }
+
+        IsProcessing = true;
+        StatusMessage = "Procesando...";
+        StatusColor = "#FFAA00";
+
         try
         {
-            var scan = _scannerService.ParseScannedCode(code, format);
-            var batch = scan.ExtractedBatchId;
-            bool ok = BatchId.Contains(batch, StringComparison.OrdinalIgnoreCase)
-                   || batch.Contains(BatchId, StringComparison.OrdinalIgnoreCase)
-                   || BatchId.Replace("-", "").Contains(batch.Replace("-", ""), StringComparison.OrdinalIgnoreCase);
+            var resultado = _scanner.Parse(raw);
 
-            if (!ok)
+            if (resultado == null)
             {
-                InstruccionConfirmar =
-                    $"El pallet escaneado ({batch}) no coincide con la solicitud ({BatchId}).\n" +
-                    $"Verifica el pallet correcto e intenta de nuevo.";
+                StatusMessage = "No se pudo leer la etiqueta — intenta de nuevo";
+                StatusColor = "#FF4444";
                 return;
             }
-            PalletVerificado = true;
-            PalletVerificadoTexto = $"Pallet confirmado: {batch}";
-            InstruccionConfirmar = "Pallet verificado. Generando código OTP...";
-            await GenerarOTPParaFolioAsync();
+
+            if (resultado.RequiereLookup)
+            {
+                // Necesita lookup en el servidor (PTI Famous, SSCC, URL)
+                await GenerarOTPConLookupAsync(raw, resultado);
+                return;
+            }
+
+            // Tenemos todos los datos localmente
+            BatchId = resultado.BatchId;
+            EsFolioAdelantado = false;
+            EmbFolio = string.Empty;
+
+            StatusMessage = $"✓ Lote: {resultado.Recibo}  ·  Producto: {resultado.ProdClave}  ·  Tarima: {resultado.Tarima}";
+            StatusColor = "#44FF44";
+
+            await GenerarOTPNormalAsync(resultado.BatchId);
         }
-        catch (Exception ex) { InstruccionConfirmar = $"Error: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error: {ex.Message}";
+            StatusColor = "#FF4444";
+        }
+        finally
+        {
+            IsProcessing = false;
+            SolicitarFocoEntrada?.Invoke();
+        }
+    }
+
+    // ── Panel 2: El scanner escribe en CodigoPalletConfirmar y pulsa Enter ───
+    [RelayCommand]
+    private async Task ConfirmarPalletAsync()
+    {
+        var raw = CodigoPalletConfirmar.Trim();
+        CodigoPalletConfirmar = string.Empty;
+
+        if (string.IsNullOrEmpty(raw))
+        {
+            SolicitarFocoConfirmar?.Invoke();
+            return;
+        }
+
+        IsProcessing = true;
+        try
+        {
+            var resultado = _scanner.Parse(raw);
+            string batchEscaneado;
+
+            if (resultado != null && resultado.EsCompleto)
+            {
+                batchEscaneado = resultado.BatchId;
+            }
+            else if (resultado?.RequiereLookup == true)
+            {
+                // Para la confirmación, hacemos lookup en el backend
+                batchEscaneado = await ResolverBatchIdAsync(raw, resultado);
+            }
+            else
+            {
+                // Usar el código raw como referencia de comparación
+                batchEscaneado = raw;
+            }
+
+            // Comparación flexible (el batchId del folio puede tener formato diferente)
+            bool coincide = VerificarCoincidencia(BatchId, batchEscaneado, raw);
+
+            if (!coincide)
+            {
+                InstruccionConfirmar =
+                    $"El pallet escaneado no coincide con la solicitud.\n\n" +
+                    $"Esperado: {BatchId}\n" +
+                    $"Escaneado: {batchEscaneado}\n\n" +
+                    "Verifica que estés en el pallet correcto y vuelve a escanear.";
+                PalletConfirmadoTexto = string.Empty;
+                SolicitarFocoConfirmar?.Invoke();
+                return;
+            }
+
+            PalletConfirmado = true;
+            PalletConfirmadoTexto = $"✓ Pallet verificado: {batchEscaneado}";
+            InstruccionConfirmar = "Pallet confirmado. Generando OTP...";
+
+            await GenerarOTPFolioAsync();
+        }
+        catch (Exception ex)
+        {
+            InstruccionConfirmar = $"Error: {ex.Message}";
+            SolicitarFocoConfirmar?.Invoke();
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    // ── Reset ─────────────────────────────────────────────────────────────────
+    [RelayCommand]
+    public void ResetScan()
+    {
+        _cts?.Cancel();
+        CodigoEscaneado = string.Empty;
+        CodigoPalletConfirmar = string.Empty;
+        BatchId = string.Empty;
+        EmbFolio = string.Empty;
+        OtpCode = string.Empty;
+        EsFolioAdelantado = false;
+        PalletConfirmado = false;
+        PalletConfirmadoTexto = string.Empty;
+        CountdownSeconds = ATUApiClient.OtpTtlSeconds;
+        CountdownText = $"00:{ATUApiClient.OtpTtlSeconds:D2}";
+        StatusMessage = "Escanea la etiqueta verde del pallet";
+        StatusColor = "#8AA0BC";
+        MostrarPanel(Panel.ScanNormal);
+        SolicitarFocoEntrada?.Invoke();
+    }
+
+    // ── Generación de OTP ────────────────────────────────────────────────────
+
+    private async Task GenerarOTPNormalAsync(string batchId)
+    {
+        var resp = await _apiClient.GenerateOTPAsync(new OTPRequest
+        {
+            SupervisorId = _supervisorId,
+            BatchId = batchId
+        });
+
+        if (resp?.Success == true && resp.Data != null)
+            MostrarOTP(resp.Data.Code, resp.Data.SecondsRemaining);
+        else
+        {
+            StatusMessage = resp?.Message ?? "Error al generar OTP";
+            StatusColor = "#FF4444";
+        }
+    }
+
+    private async Task GenerarOTPConLookupAsync(string raw, EtiquetaParseResult resultado)
+    {
+        // El lookup se hace en el backend enviando el código raw
+        // El endpoint resolve-barcode devuelve prod_clave, recibo, tarima
+        var resp = await _apiClient.GenerateOTPAsync(new OTPRequest
+        {
+            SupervisorId = _supervisorId,
+            BatchId = raw  // el backend resuelve si es PTI Famous, SSCC, etc.
+        });
+
+        if (resp?.Success == true && resp.Data != null)
+        {
+            BatchId = resp.Data.BatchId;
+            MostrarOTP(resp.Data.Code, resp.Data.SecondsRemaining);
+        }
+        else
+        {
+            StatusMessage = resp?.Message ?? "Error al generar OTP";
+            StatusColor = "#FF4444";
+        }
     }
 
     [RelayCommand]
-    public async Task GenerateOTPForFolioCommand() => await GenerarOTPParaFolioAsync();
-
-    private async Task GenerarOTPParaFolioAsync()
+    private async Task GenerarOTPFolioAsync()
     {
-        IsGenerating = true;
+        IsProcessing = true;
         try
         {
-            var r = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, _supervisorId);
-            if (r?.Success == true && r.Data != null)
+            var resp = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, _supervisorId);
+            if (resp?.Success == true && resp.Data != null)
             {
-                if (!string.IsNullOrEmpty(r.Data.BatchId)) BatchId = r.Data.BatchId;
-                MostrarOTP(r.Data.Code, r.Data.SecondsRemaining);
+                if (!string.IsNullOrEmpty(resp.Data.BatchId)) BatchId = resp.Data.BatchId;
+                MostrarOTP(resp.Data.Code, resp.Data.SecondsRemaining);
             }
-            else { InstruccionConfirmar = r?.Message ?? "Error al generar OTP"; PalletVerificado = false; }
+            else
+            {
+                InstruccionConfirmar = resp?.Message ?? "Error al generar OTP";
+                PalletConfirmado = false;
+                SolicitarFocoConfirmar?.Invoke();
+            }
         }
-        catch (Exception ex) { InstruccionConfirmar = $"Error: {ex.Message}"; }
-        finally { IsGenerating = false; }
+        finally { IsProcessing = false; }
     }
 
     private void MostrarOTP(string code, int seconds)
     {
-        OtpCode = code; CountdownSeconds = seconds > 0 ? seconds : ATUApiClient.OtpTtlSeconds;
-        ShowScanNormal = false; ShowConfirmarFolio = false; ShowOTP = true;
-        StartCountdown();
-        if (HapticFeedback.IsSupported) HapticFeedback.Perform(HapticFeedbackType.LongPress);
+        OtpCode = code;
+        CountdownSeconds = seconds > 0 ? seconds : ATUApiClient.OtpTtlSeconds;
+        MostrarPanel(Panel.OTP);
+        IniciarCountdown();
+        if (HapticFeedback.IsSupported)
+            HapticFeedback.Perform(HapticFeedbackType.LongPress);
     }
 
-    [RelayCommand]
-    public void ResetScan()
+    private void IniciarCountdown()
     {
-        _countdownCts?.Cancel();
-        ScannedCode = string.Empty; BatchId = string.Empty; EmbFolio = string.Empty;
-        OtpCode = string.Empty; EsFolioAdelantado = false;
-        PalletVerificado = false; PalletVerificadoTexto = string.Empty;
-        CountdownSeconds = ATUApiClient.OtpTtlSeconds; CountdownText = $"00:{ATUApiClient.OtpTtlSeconds:D2}";
-        ShowScanNormal = true; ShowConfirmarFolio = false; ShowOTP = false;
-        StatusMessage = "Apunta la cámara a la etiqueta verde del pallet"; StatusColor = "#8AA0BC";
-    }
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
 
-    private void StartCountdown()
-    {
-        _countdownCts?.Cancel(); _countdownCts = new CancellationTokenSource();
         Task.Run(async () =>
         {
             while (CountdownSeconds > 0)
             {
-                try { await Task.Delay(1000, _countdownCts.Token); }
+                try { await Task.Delay(1000, _cts.Token); }
                 catch (OperationCanceledException) { return; }
                 CountdownSeconds--;
                 var s = Math.Max(0, CountdownSeconds);
-                MainThread.BeginInvokeOnMainThread(() => { CountdownText = $"00:{s:D2}"; });
+                MainThread.BeginInvokeOnMainThread(() =>
+                    CountdownText = $"00:{s:D2}");
             }
             MainThread.BeginInvokeOnMainThread(() => ResetScan());
-        }, _countdownCts.Token);
+        }, _cts.Token);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private enum Panel { ScanNormal, ConfirmarFolio, OTP }
+
+    private void MostrarPanel(Panel p)
+    {
+        ShowScanNormal = p == Panel.ScanNormal;
+        ShowConfirmarFolio = p == Panel.ConfirmarFolio;
+        ShowOTP = p == Panel.OTP;
+    }
+
+    private static bool VerificarCoincidencia(string esperado, string escaneado, string raw)
+    {
+        // Comparación normalizada: quitar guiones, ceros al inicio, mayúsculas
+        string Normalizar(string s) => s.Replace("-", "").TrimStart('0').ToUpperInvariant();
+
+        var e = Normalizar(esperado);
+        var s = Normalizar(escaneado);
+        var r = Normalizar(raw);
+
+        return e == s || e.Contains(s) || s.Contains(e) || e == r || e.Contains(r);
+    }
+
+    private async Task<string> ResolverBatchIdAsync(string raw, EtiquetaParseResult resultado)
+    {
+        // Por ahora devolver el código raw para comparación
+        // En una versión futura el backend resuelve via /api/otp/resolve-barcode
+        await Task.CompletedTask;
+        return raw;
     }
 }

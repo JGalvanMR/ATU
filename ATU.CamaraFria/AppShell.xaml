@@ -5,43 +5,44 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:ATU.CamaraFria.Views"
     BackgroundColor="#070B18"
-    Shell.FlyoutBehavior="Disabled">
+    FlyoutBehavior="Disabled">
 
     <TabBar
-        Shell.TabBarBackgroundColor="#0a0e1a"
+        Shell.TabBarBackgroundColor="#0A0E1A"
         Shell.TabBarForegroundColor="#00BFFF"
-        Shell.TabBarUnselectedColor="#555">
+        Shell.TabBarUnselectedColor="#3A5070">
+
         <!--
-            Tab 1: Escanear
-            El supervisor de cámaras escanea la etiqueta verde del pallet
-            con su dispositivo Unitech PA768 o Honeywell ScanPal EDA-50.
-            Ruta //Scan usada por App.xaml.cs al recibir notificación SignalR.
+            ESCANEAR
+            El supervisor de cámaras frías escanea la etiqueta verde.
+            Ruta //Scan usada por MainActivity y SolicitudesPage.
         -->
         <ShellContent
             Title="Escanear"
             ContentTemplate="{DataTemplate views:OTPDisplayPage}"
             Icon="scan_icon.svg"
             Route="Scan" />
+
         <!--
-            Tab 2: Solicitudes
+            SOLICITUDES
             Lista de folios adelantados pendientes de autorizar.
-            Reemplaza el Tab "Pendientes" anterior.
-            Al tocar AUTORIZAR → navega a //Scan con el folio precargado.
+            Antes era "Pendientes" — ahora muestra solicitudes del servidor.
         -->
         <ShellContent
             Title="Solicitudes"
             ContentTemplate="{DataTemplate views:SolicitudesPage}"
             Icon="sync_icon.svg"
             Route="Solicitudes" />
+
         <!--
-            Tab 3: Configuración
+            CONFIG
             URL del servidor, info de sesión, cerrar sesión.
         -->
         <ShellContent
-            Title="Configuración"
+            Title="Config"
             ContentTemplate="{DataTemplate views:SettingsPage}"
             Icon="settings_icon.svg"
             Route="Settings" />
-    </TabBar>
 
+    </TabBar>
 </Shell>

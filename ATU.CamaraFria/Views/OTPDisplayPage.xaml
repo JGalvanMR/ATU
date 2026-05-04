@@ -4,7 +4,6 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:viewmodel="clr-namespace:ATU.CamaraFria.ViewModels"
-    xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.MAUI.Controls"
     x:DataType="viewmodel:OTPViewModel"
     BackgroundColor="#070B18">
 
@@ -13,8 +12,8 @@
         <!--  Header  -->
         <Grid
             Grid.Row="0"
-            Padding="16,12"
-            ColumnDefinitions="*,Auto">
+            Padding="16,14"
+            ColumnDefinitions="*,Auto,Auto">
             <Label
                 Grid.Column="0"
                 FontAttributes="Bold"
@@ -25,197 +24,259 @@
             <Border
                 x:Name="ConnectionIndicator"
                 Grid.Column="1"
+                Margin="0,0,10,0"
                 BackgroundColor="#44FF44"
                 HeightRequest="10"
                 StrokeShape="RoundRectangle 5"
                 VerticalOptions="Center"
                 WidthRequest="10" />
+            <Label
+                Grid.Column="2"
+                FontSize="12"
+                IsVisible="{Binding EsFolioAdelantado}"
+                Text="{Binding EmbFolio, StringFormat='Folio: {0}'}"
+                TextColor="#00BFFF"
+                VerticalOptions="Center" />
         </Grid>
 
-        <!--  ══ PANEL 1: Escaneo libre de etiqueta verde ══  -->
-        <Grid Grid.Row="1" IsVisible="{Binding ShowScanNormal}">
+        <!--
+            ══════════════════════════════════════════════════════
+            PANEL 1 — Escaneo libre de etiqueta verde
+            El scanner Unitech/Honeywell escribe en EntryEscaneo
+            y envía Enter automáticamente.
+            ══════════════════════════════════════════════════════
+        -->
+        <ScrollView Grid.Row="1" IsVisible="{Binding ShowScanNormal}">
+            <VerticalStackLayout
+                Padding="24"
+                Spacing="20"
+                VerticalOptions="Center">
 
-            <zxing:CameraBarcodeReaderView
-                x:Name="CameraScanner"
-                BarcodesDetected="OnBarcodesDetected"
-                HorizontalOptions="Fill"
-                IsDetecting="True"
-                VerticalOptions="Fill" />
-
-            <Grid>
-                <!--  Marco de escaneo  -->
-                <Border
-                    BackgroundColor="Transparent"
-                    HeightRequest="240"
-                    HorizontalOptions="Center"
-                    Stroke="#00BFFF"
-                    StrokeDashArray="10,5"
-                    StrokeShape="RoundRectangle 16"
-                    StrokeThickness="2"
-                    VerticalOptions="Center"
-                    WidthRequest="240" />
-
-                <Label
-                    Margin="0,-160,0,0"
-                    FontSize="14"
-                    HorizontalOptions="Center"
-                    HorizontalTextAlignment="Center"
-                    Text="Apunta al código de la etiqueta verde del pallet"
-                    TextColor="White"
-                    VerticalOptions="Center" />
-
-                <!--  Panel inferior  -->
-                <VerticalStackLayout
-                    Padding="20,0,20,24"
-                    Spacing="8"
-                    VerticalOptions="End">
+                <!--  Ícono y estado  -->
+                <VerticalStackLayout HorizontalOptions="Center" Spacing="8">
+                    <Label
+                        FontSize="64"
+                        HorizontalOptions="Center"
+                        Text="📷" />
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        HorizontalOptions="Center"
+                        Text="Listo para escanear"
+                        TextColor="White" />
                     <Label
                         FontSize="13"
                         HorizontalOptions="Center"
                         HorizontalTextAlignment="Center"
+                        Text="Apunta el scanner a la etiqueta verde del pallet"
+                        TextColor="#8AA0BC" />
+                </VerticalStackLayout>
+
+                <!--  Campo de escaneo — recibe el texto del scanner hardware  -->
+                <Border
+                    Padding="4"
+                    BackgroundColor="#0D1525"
+                    Stroke="#00BFFF"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="2">
+                    <Entry
+                        x:Name="EntryEscaneo"
+                        Margin="12,14"
+                        ClearButtonVisibility="WhileEditing"
+                        FontSize="16"
+                        Placeholder="Scanner listo — o escribe el código"
+                        PlaceholderColor="#3A5070"
+                        ReturnCommand="{Binding ProcesarCodigoEscaneadoCommand}"
+                        ReturnType="Go"
+                        Text="{Binding CodigoEscaneado}"
+                        TextColor="White" />
+                </Border>
+
+                <!--  Estado / resultado  -->
+                <Border
+                    Padding="14"
+                    BackgroundColor="#0D1525"
+                    IsVisible="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
+                    Stroke="#1E3050"
+                    StrokeShape="RoundRectangle 10">
+                    <Label
+                        FontSize="14"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"
                         Text="{Binding StatusMessage}"
                         TextColor="{Binding StatusColor}" />
-                    <Border
-                        BackgroundColor="#CC070B18"
-                        Stroke="#1E3050"
-                        StrokeShape="RoundRectangle 10">
-                        <Entry
-                            Margin="10,10"
-                            FontSize="14"
-                            Placeholder="O ingresa el código manualmente"
-                            PlaceholderColor="#3A5070"
-                            ReturnCommand="{Binding ProcessScannedCodeCommand}"
-                            Text="{Binding ScannedCode}"
-                            TextColor="White" />
-                    </Border>
-                    <Button
-                        BackgroundColor="#00BFFF"
-                        Command="{Binding ProcessScannedCodeCommand}"
-                        CornerRadius="10"
-                        FontAttributes="Bold"
-                        FontSize="15"
-                        HeightRequest="48"
-                        IsEnabled="{Binding IsNotBusy}"
-                        Text="⚡  Generar OTP"
-                        TextColor="Black" />
-                </VerticalStackLayout>
-            </Grid>
+                </Border>
 
-            <ActivityIndicator
-                HeightRequest="60"
-                HorizontalOptions="Center"
-                IsRunning="{Binding IsGenerating}"
-                IsVisible="{Binding IsGenerating}"
-                VerticalOptions="Center"
-                WidthRequest="60"
-                Color="#00BFFF" />
-        </Grid>
+                <ActivityIndicator
+                    HorizontalOptions="Center"
+                    IsRunning="{Binding IsProcessing}"
+                    IsVisible="{Binding IsProcessing}"
+                    Color="#00BFFF" />
 
-        <!--  ══ PANEL 2: Confirmar pallet físico (folio adelantado) ══  -->
+                <!--  Botón manual como respaldo  -->
+                <Button
+                    BackgroundColor="#00BFFF"
+                    Command="{Binding ProcesarCodigoEscaneadoCommand}"
+                    CornerRadius="12"
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    HeightRequest="52"
+                    Text="⚡  Generar OTP"
+                    TextColor="Black" />
+
+                <!--  Tip para el usuario  -->
+                <Border
+                    Padding="14"
+                    BackgroundColor="#0A1A0A"
+                    Stroke="#0F6E56"
+                    StrokeShape="RoundRectangle 10">
+                    <Label
+                        FontSize="12"
+                        HorizontalTextAlignment="Center"
+                        TextColor="#5A8A5A">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="💡 " />
+                                <Span Text="Compatibe con Unitech PA768 y Honeywell ScanPal EDA-50. El scanner escribe automáticamente en este campo." />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!--
+            ══════════════════════════════════════════════════════
+            PANEL 2 — Confirmar pallet físico (folio adelantado)
+            Mismo mecanismo: scanner escribe en EntryConfirmar
+            ══════════════════════════════════════════════════════
+        -->
         <ScrollView Grid.Row="1" IsVisible="{Binding ShowConfirmarFolio}">
-            <VerticalStackLayout Padding="20" Spacing="14">
+            <VerticalStackLayout Padding="20" Spacing="16">
 
-                <!--  Información de qué se está autorizando  -->
+                <!--  Info de la solicitud  -->
                 <Border
                     Padding="16"
                     BackgroundColor="#0D1525"
                     Stroke="#FFB800"
                     StrokeShape="RoundRectangle 12"
                     StrokeThickness="1.5">
-                    <VerticalStackLayout Spacing="6">
+                    <VerticalStackLayout Spacing="8">
                         <Label
                             CharacterSpacing="1"
                             FontSize="11"
                             Text="Solicitud de folio adelantado"
-                            TextColor="#8AA0BC" />
+                            TextColor="#8AA0BC"
+                            TextTransform="Uppercase" />
                         <Label
                             FontAttributes="Bold"
-                            FontSize="17"
+                            FontSize="18"
                             Text="{Binding InfoProducto}"
                             TextColor="White" />
                         <Label
                             FontAttributes="Bold"
-                            FontSize="13"
+                            FontSize="14"
                             Text="{Binding BatchId}"
                             TextColor="#00BFFF" />
                         <BoxView
                             Margin="0,4"
                             HeightRequest="1"
                             Color="#2A3A50" />
-                        <Label
-                            FontSize="13"
-                            Text="{Binding InfoSolicitante}"
-                            TextColor="#8AA0BC" />
-                        <Label
-                            FontSize="12"
-                            Text="{Binding MotivoSolicitud}"
-                            TextColor="#5A7FA8" />
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Label
+                                Grid.Column="0"
+                                FontSize="13"
+                                Text="Solicitó:"
+                                TextColor="#5A7FA8"
+                                WidthRequest="70" />
+                            <Label
+                                Grid.Column="1"
+                                FontSize="13"
+                                Text="{Binding InfoSolicitante}"
+                                TextColor="#8AA0BC" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Label
+                                Grid.Column="0"
+                                FontSize="13"
+                                Text="Motivo:"
+                                TextColor="#5A7FA8"
+                                WidthRequest="70" />
+                            <Label
+                                Grid.Column="1"
+                                FontSize="13"
+                                Text="{Binding MotivoSolicitud}"
+                                TextColor="#8AA0BC" />
+                        </Grid>
                     </VerticalStackLayout>
                 </Border>
 
-                <!--  Instrucción + cámara para confirmar pallet  -->
+                <!--  Instrucción  -->
                 <Label
                     FontAttributes="Bold"
-                    FontSize="14"
+                    FontSize="15"
                     HorizontalOptions="Center"
-                    Text="Escanea el pallet físico para confirmar"
+                    Text="Paso 1: Confirma el pallet físico"
                     TextColor="White" />
-
-                <Border
-                    BackgroundColor="#000"
-                    HeightRequest="260"
-                    HorizontalOptions="Center"
-                    StrokeShape="RoundRectangle 12"
-                    WidthRequest="260">
-                    <Grid>
-                        <zxing:CameraBarcodeReaderView
-                            x:Name="CameraConfirm"
-                            BarcodesDetected="OnBarcodesDetected"
-                            HorizontalOptions="Fill"
-                            IsDetecting="True"
-                            VerticalOptions="Fill" />
-                        <Border
-                            BackgroundColor="Transparent"
-                            HeightRequest="190"
-                            HorizontalOptions="Center"
-                            Stroke="#FFB800"
-                            StrokeDashArray="8,4"
-                            StrokeShape="RoundRectangle 10"
-                            StrokeThickness="2"
-                            VerticalOptions="Center"
-                            WidthRequest="190" />
-                    </Grid>
-                </Border>
-
                 <Label
-                    FontSize="12"
+                    FontSize="13"
                     HorizontalOptions="Center"
                     HorizontalTextAlignment="Center"
                     LineBreakMode="WordWrap"
                     Text="{Binding InstruccionConfirmar}"
                     TextColor="#8AA0BC" />
 
-                <!--  Pallet verificado  -->
+                <!--  Campo de confirmación — recibe el scanner  -->
+                <Border
+                    Padding="4"
+                    BackgroundColor="#0D1525"
+                    Stroke="#FFB800"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="2">
+                    <Entry
+                        x:Name="EntryConfirmar"
+                        Margin="12,14"
+                        ClearButtonVisibility="WhileEditing"
+                        FontSize="16"
+                        Placeholder="Escanea el código del pallet a autorizar"
+                        PlaceholderColor="#5A4A00"
+                        ReturnCommand="{Binding ConfirmarPalletCommand}"
+                        ReturnType="Go"
+                        Text="{Binding CodigoPalletConfirmar}"
+                        TextColor="White" />
+                </Border>
+
+                <!--  Estado de confirmación  -->
                 <Border
                     Padding="14"
                     BackgroundColor="#091F09"
-                    IsVisible="{Binding PalletVerificado}"
+                    IsVisible="{Binding PalletConfirmado}"
                     Stroke="#0F6E56"
                     StrokeShape="RoundRectangle 10"
                     StrokeThickness="1.5">
                     <Label
                         FontAttributes="Bold"
-                        FontSize="14"
+                        FontSize="15"
                         HorizontalOptions="Center"
-                        Text="{Binding PalletVerificadoTexto}"
+                        Text="{Binding PalletConfirmadoTexto}"
                         TextColor="#00FF88" />
                 </Border>
 
                 <ActivityIndicator
                     HorizontalOptions="Center"
-                    IsRunning="{Binding IsGenerating}"
-                    IsVisible="{Binding IsGenerating}"
-                    Color="#00BFFF" />
+                    IsRunning="{Binding IsProcessing}"
+                    IsVisible="{Binding IsProcessing}"
+                    Color="#FFB800" />
+
+                <Button
+                    BackgroundColor="#FFB800"
+                    Command="{Binding ConfirmarPalletCommand}"
+                    CornerRadius="10"
+                    FontAttributes="Bold"
+                    FontSize="15"
+                    HeightRequest="50"
+                    Text="Confirmar"
+                    TextColor="Black" />
 
                 <Button
                     BackgroundColor="#1E2A3A"
@@ -228,14 +289,18 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!--  ══ PANEL 3: OTP generado ══  -->
+        <!--
+            ══════════════════════════════════════════════════════
+            PANEL 3 — OTP generado
+            ══════════════════════════════════════════════════════
+        -->
         <ScrollView Grid.Row="1" IsVisible="{Binding ShowOTP}">
             <VerticalStackLayout
                 Padding="20"
                 Spacing="16"
                 VerticalOptions="Center">
 
-                <!--  Info del lote autorizado  -->
+                <!--  Info del lote  -->
                 <Border
                     Padding="16"
                     BackgroundColor="#0D1525"
@@ -244,7 +309,7 @@
                     <Grid
                         ColumnDefinitions="80,*"
                         RowDefinitions="Auto,Auto,Auto"
-                        RowSpacing="6">
+                        RowSpacing="8">
                         <Label
                             Grid.Row="0"
                             Grid.Column="0"
@@ -256,6 +321,7 @@
                             Grid.Column="1"
                             FontAttributes="Bold"
                             FontSize="14"
+                            LineBreakMode="TailTruncation"
                             Text="{Binding BatchId}"
                             TextColor="#00BFFF" />
                         <Label
@@ -296,33 +362,33 @@
                     BackgroundColor="#0A1525"
                     Stroke="#00BFFF"
                     StrokeShape="RoundRectangle 20"
-                    StrokeThickness="2.5">
-                    <VerticalStackLayout HorizontalOptions="Center" Spacing="8">
+                    StrokeThickness="3">
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="10">
                         <Label
-                            CharacterSpacing="2"
+                            CharacterSpacing="3"
                             FontSize="11"
                             HorizontalOptions="Center"
-                            Text="CÓDIGO OTP — DÍCTALO EN VOZ ALTA"
+                            Text="CÓDIGO OTP"
                             TextColor="#5A7FA8" />
                         <Label
-                            CharacterSpacing="12"
+                            CharacterSpacing="14"
                             FontAttributes="Bold"
                             FontSize="80"
                             HorizontalOptions="Center"
                             Text="{Binding OtpCode}"
                             TextColor="#00FF88" />
                         <Label
-                            FontSize="12"
+                            FontSize="13"
                             HorizontalOptions="Center"
                             HorizontalTextAlignment="Center"
-                            Text="El operador de embarques lo escribe en su terminal"
+                            Text="Díctalo en voz alta al operador de embarques"
                             TextColor="#5A7FA8" />
                     </VerticalStackLayout>
                 </Border>
 
                 <!--  Countdown  -->
                 <Border
-                    Padding="16,12"
+                    Padding="18,14"
                     BackgroundColor="#0D1525"
                     Stroke="#FF2D55"
                     StrokeShape="RoundRectangle 12"
@@ -330,14 +396,14 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <Label
                             Grid.Column="0"
-                            FontSize="16"
+                            FontSize="17"
                             Text="Expira en:"
                             TextColor="#AAA"
                             VerticalOptions="Center" />
                         <Label
                             Grid.Column="1"
                             FontAttributes="Bold"
-                            FontSize="44"
+                            FontSize="46"
                             Text="{Binding CountdownText}"
                             TextColor="#FF2D55"
                             VerticalOptions="Center" />
@@ -349,7 +415,7 @@
                     Command="{Binding ResetScanCommand}"
                     CornerRadius="10"
                     FontSize="15"
-                    HeightRequest="48"
+                    HeightRequest="50"
                     Text="🔄  Escanear Nuevo Lote"
                     TextColor="White" />
             </VerticalStackLayout>

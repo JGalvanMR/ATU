@@ -1,45 +1,66 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- ATU.CamaraFria/Platforms/Android/AndroidManifest.xml -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-	<!-- Permisos de cámara para escaneo -->
-	<uses-permission android:name="android.permission.CAMERA" />
-	<uses-feature android:name="android.hardware.camera" android:required="false" />
-	<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-
-	<!-- Permisos para biometría -->
-	<uses-permission android:name="android.permission.USE_BIOMETRIC" />
-
-	<!-- Permiso para vibración -->
-	<uses-permission android:name="android.permission.VIBRATE" />
-
-	<!-- Permiso para red (local) -->
+	<!-- Permisos de red -->
+	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-	<!-- Permiso para GPS (opcional, para geofencing) -->
-	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+	<!-- Notificaciones reales (Android 13+) -->
+	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+	<!-- Foreground Service — requerido para mantener SignalR activo en segundo plano -->
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+	<!-- Vibración al recibir notificación -->
+	<uses-permission android:name="android.permission.VIBRATE" />
+
+	<!-- Cámara (para versiones futuras con escaner por cámara) -->
+	<uses-permission android:name="android.permission.CAMERA" />
+	<uses-feature android:name="android.hardware.camera" android:required="false" />
+
+	<!-- Biometría -->
+	<uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+	<!-- Arrancar servicio al reiniciar el dispositivo -->
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
 	<application
         android:allowBackup="true"
-        android:icon="@android:mipmap/sym_def_app_icon"
+        android:icon="@mipmap/appicon"
         android:label="ATU Cámara Fría"
-        android:roundIcon="@android:mipmap/sym_def_app_icon"
+        android:roundIcon="@mipmap/appicon_round"
         android:supportsRtl="true"
         android:theme="@style/Maui.SplashTheme"
         android:hardwareAccelerated="true"
         android:usesCleartextTraffic="true">
 
-		<!-- Habilitar cleartext para red local HTTP -->
-		<uses-library
-            android:name="org.apache.http.legacy"
-            android:required="false" />
-
+		<!-- Actividad principal -->
 		<activity
-            android:name="com.microsoft.maui.essentials.PlatformActivity"
+            android:name="com.mrlucky.atu.camarafria.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
-            android:windowSoftInputMode="adjustResize"
-            android:usesCleartextTraffic="true" />
-	</application>
+            android:windowSoftInputMode="adjustResize" />
 
+		<!-- Foreground Service de notificaciones ATU (on-premise, sin Firebase) -->
+		<service
+            android:name="com.mrlucky.atu.camarafria.Platforms.Android.ATUNotificationService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+
+		<!-- Receptor que reinicia el servicio al arrancar el dispositivo -->
+		<receiver
+            android:name="com.mrlucky.atu.camarafria.Platforms.Android.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+			<intent-filter android:priority="1000">
+				<action android:name="android.intent.action.BOOT_COMPLETED" />
+				<action android:name="android.intent.action.QUICKBOOT_POWERON" />
+			</intent-filter>
+		</receiver>
+
+	</application>
 </manifest>
