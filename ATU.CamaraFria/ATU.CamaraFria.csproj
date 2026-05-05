@@ -25,6 +25,19 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\AppIcon\appicon.svg" />
+	  <None Remove="Resources\AppIcon\appiconfg.svg" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiFont Include="Resources\AppIcon\appiconfg.svg" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiIcon Include="Resources\AppIcon\appicon.svg" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <MauiImage Include="Resources\Images\scan_icon.svg" />
 	</ItemGroup>
 	<ItemGroup>
@@ -59,6 +72,10 @@
 
 		<!-- MVVM Toolkit (este sí es correcto, el que da error es el otro) -->
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\ATU.Shared\ATU.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

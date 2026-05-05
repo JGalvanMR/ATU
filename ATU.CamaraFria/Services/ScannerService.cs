@@ -1,298 +1,123 @@
-﻿using System.Text.RegularExpressions;
-using ATU.CamaraFria.Models;
+﻿using ATU.Trazabilidad.Core;
+using System.Data;
 
 namespace ATU.CamaraFria.Services;
 
-/// <summary>
-/// Procesa los códigos leídos por los scanners Unitech PA768 y Honeywell ScanPal EDA-50.
-/// Los scanners funcionan como teclado virtual: envían texto al Entry enfocado y simulan Enter.
-/// Las reglas de parseo siguen exactamente la lógica de FragmentoCapturarPedido.cs.
-/// </summary>
 public class ScannerService : IScannerService
 {
-    // URLs internas de trazabilidad mrlucky
-    private static readonly string[] UrlsTrazabilidad =
-    {
-        "http://www.mrlucky.com.mx/tr/trazabilidad2_dmi.php?id_codigo=",
-        "HTTP://WWW.MRLUCKY.COM.MX/TR/TRAZABILIDAD2_DMI.PHP?ID_CODIGO=",
-        "http://gab.mrlucky.com.mx/tr/trazabilidad2_dmi.php?id_codigo=",
-        "HTTP://GAB.MRLUCKY.COM.MX/TR/TRAZABILIDAD2_DMI.PHP?ID_CODIGO="
-    };
+    private readonly ValidadorEtiquetas _validadorDll = new(); // Mantenemos la DLL por si se necesita para otra cosa
+    private DataTable? _catalogoActual;
 
-    // ── API pública ────────────────────────────────────────────────────────────
+    public DataTable? CatalogoActual
+    {
+        get => Volatile.Read(ref _catalogoActual);
+        set => Volatile.Write(ref _catalogoActual, value);
+    }
 
     public EtiquetaParseResult? Parse(string rawCode)
     {
         if (string.IsNullOrWhiteSpace(rawCode)) return null;
-
         var code = rawCode.Trim();
 
-        // Ignorar lecturas inválidas (longitud 10 = FAC/adicionales, no etiqueta verde)
-        if (code.Length == 10 || code.Contains("FAC"))
+        // Filtros rápidos
+        if (code.Length <= 10 || code.Contains("FAC") || code.Contains("SPLIT*"))
             return null;
 
-        // Ignorar URLs de trazabilidad (se procesan aparte si fuera necesario)
-        if (EsUrlTrazabilidad(code))
-            return ParseDesdeUrl(code);
-
-        // Ignorar SPLITs
-        if (code.Contains("SPLIT*"))
-            return null;
-
-        // Mínimo de longitud para ser etiqueta verde
-        if (code.Length <= 10)
-            return null;
-
-        return ProcesarEtiquetaVerde(code);
-    }
-
-    public bool EsCodigoValido(string code)
-    {
-        if (string.IsNullOrWhiteSpace(code)) return false;
-        var c = code.Trim();
-        if (c.Length <= 10) return false;
-        if (c.Contains("SPLIT*")) return false;
-        return true;
-    }
-
-    public string FormatearBatchId(string prodClave, string recibo, string tarima)
-        => $"{prodClave.Trim()}-{recibo.TrimStart('0').Trim()}-{tarima.TrimStart('0').Trim()}";
-
-    // ── Lógica de parseo — espejo de FragmentoCapturarPedido.cs ───────────────
-
-    private EtiquetaParseResult? ProcesarEtiquetaVerde(string code)
-    {
-        string vRecibo = "", vPrd = "", mtar = "", mtipo = "";
-
-        // Paso 1: intentar con la función ProcesarEtiqueta equivalente
-        var info = TryProcesarEtiqueta(code);
-        if (info != null)
+        // 1. ESTRATEGIA PRINCIPAL: El Ancla (Tu nueva lógica)
+        if (CatalogoActual != null && CatalogoActual.Rows.Count > 0)
         {
-            vRecibo = info.Recibo;
-            vPrd = info.ProdClave;
-            mtar = info.Tarima;
-            mtipo = info.Tipo;
+            var resultadoAncla = ParsearPorAncla(code, CatalogoActual);
+            if (resultadoAncla != null)
+                return resultadoAncla;
         }
 
-        bool incompleto = string.IsNullOrEmpty(vRecibo) || string.IsNullOrEmpty(mtar)
-                       || string.IsNullOrEmpty(vPrd) || string.IsNullOrEmpty(mtipo);
-
-        // PTI Famous: exactamente 12 dígitos
-        if (incompleto && code.Length == 12)
+        // 2. ESTRATEGIA SECUNDARIA: Lookup forzoso si no hay catálogo
+        // (PTI Famous de 12 dígitos puros)
+        if (code.Length == 12 && System.Linq.Enumerable.All(code, char.IsDigit))
         {
-            var ptiFamous = code.StartsWith("0") ? code.TrimStart('0') : code;
-            // En ATU no tenemos DB local, marcamos para lookup remoto
             return new EtiquetaParseResult
             {
-                ProdClave = vPrd,
-                Recibo = vRecibo,
-                Tarima = mtar,
-                Tipo = mtipo,
                 CodigoRaw = code,
                 RequiereLookup = true,
                 LookupTipo = "PTI_FAMOUS",
-                LookupValor = ptiFamous
+                LookupValor = code.TrimStart('0')
             };
         }
 
-        // SSCC: contiene el prefijo de contenedor de envío
-        if (incompleto && (code.Contains("00") && code.Length >= 18))
-        {
-            return new EtiquetaParseResult
-            {
-                CodigoRaw = code,
-                RequiereLookup = true,
-                LookupTipo = "SSCC",
-                LookupValor = code
-            };
-        }
-
-        // PTI Clave: sin espacios
-        if (incompleto && !code.Contains(" "))
-        {
-            var resultado = TryValidarEtiquetaNueva(code);
-            if (resultado != null)
-            {
-                vRecibo = resultado.Recibo;
-                vPrd = resultado.ProdClave;
-                mtar = resultado.Tarima;
-                mtipo = resultado.Tipo;
-                incompleto = false;
-            }
-            else
-            {
-                // Lookup por pti_clave en DB
-                return new EtiquetaParseResult
-                {
-                    CodigoRaw = code,
-                    RequiereLookup = true,
-                    LookupTipo = "PTI_CLAVE",
-                    LookupValor = code
-                };
-            }
-        }
-
-        // Etiqueta con espacios (formato anterior)
-        if (incompleto && code.Contains(" "))
-        {
-            if (code.Length < 18)
-            {
-                mtar = code.Substring(code.Length - 3, 3);
-                vRecibo = code.Substring(0, 5);
-                vPrd = code.Replace(vRecibo, "").Replace(mtar, "").Trim();
-                mtar = mtar.Replace(" ", "0");
-                mtipo = "PTC";
-            }
-            else
-            {
-                mtar = code.Substring(code.Length - 3, 3);
-                vRecibo = code.Substring(0, 6);
-                vPrd = code.Replace(vRecibo, "").Replace(mtar, "").Trim();
-                mtar = mtar.Replace(" ", "0");
-                mtipo = "PTP";
-                if (vRecibo.StartsWith("0"))
-                {
-                    mtipo = "PTC";
-                    vRecibo = int.Parse(vRecibo).ToString();
-                }
-            }
-            incompleto = false;
-        }
-
-        // Formato por descarte (sin espacios, longitud variable)
-        if (incompleto)
-        {
-            var tam = code.Length;
-            mtar = code.Substring(tam - 3, 3);
-            vRecibo = code.Substring(0, 6);
-            mtipo = "PTP";
-            if (vRecibo.StartsWith("0"))
-            {
-                mtipo = "PTC";
-                vRecibo = int.Parse(vRecibo).ToString();
-            }
-            int lCad = tam - 9;
-            vPrd = lCad > 0 ? code.Substring(6, lCad) : string.Empty;
-        }
-
-        // Normalizar
-        vRecibo = vRecibo.TrimStart('0').Trim();
-        mtar = mtar.TrimStart('0').Trim();
-
-        if (string.IsNullOrEmpty(vRecibo) || string.IsNullOrEmpty(vPrd))
-            return null;
-
-        return new EtiquetaParseResult
-        {
-            ProdClave = vPrd.Trim(),
-            Recibo = vRecibo,
-            Tarima = mtar,
-            Tipo = mtipo,
-            CodigoRaw = code,
-            RequiereLookup = false
-        };
-    }
-
-    /// <summary>
-    /// Equivalente a ProcesarEtiqueta() del original.
-    /// Detecta el formato estándar interno de la empresa.
-    /// </summary>
-    private static EtiquetaInfo? TryProcesarEtiqueta(string code)
-    {
-        // Formato conocido: URL de trazabilidad con id_codigo
-        if (EsUrlTrazabilidad(code))
-            return null; // ya se maneja antes
-
-        // Intentar extraer con regex el formato más común:
-        // [Recibo 4-6 chars][ProdClave N chars][Tarima 3 chars]
-        // Sin espacio, longitud típica 13-20 chars
-        if (!code.Contains(" ") && code.Length >= 13)
-        {
-            // Si empieza con 0 → PTC, recibo sin ceros
-            string tipo = code.StartsWith("0") ? "PTC" : "PTP";
-            string recibo = code.Substring(0, 6);
-            if (recibo.StartsWith("0") && int.TryParse(recibo, out int reciboNum))
-            {
-                recibo = reciboNum.ToString();
-                tipo = "PTC";
-            }
-
-            string tarima = code.Substring(code.Length - 3, 3);
-            int longPrd = code.Length - 6 - 3;
-            if (longPrd > 0)
-            {
-                string prod = code.Substring(6, longPrd);
-                return new EtiquetaInfo
-                {
-                    Recibo = recibo.TrimStart('0'),
-                    ProdClave = prod.Trim(),
-                    Tarima = tarima.TrimStart('0'),
-                    Tipo = tipo
-                };
-            }
-        }
-
+        // Si no hay catálogo y no es PTI, no podemos procesarla
         return null;
     }
 
     /// <summary>
-    /// Equivalente a ValidarEtiquetaVerde() del original.
-    /// Detecta el formato nuevo de etiqueta.
+    /// Lógica del Ancla: Busca el producto dentro del texto y deduce Recibo/Tarima.
+    /// Asume que el DataTable viene ordenado por LEN(prod_clave) DESC.
     /// </summary>
-    private static EtiquetaInfo? TryValidarEtiquetaNueva(string code)
+    private EtiquetaParseResult? ParsearPorAncla(string textoEtiqueta, DataTable catalogo)
     {
-        // Formato nuevo: puede contener guiones o estructura diferente
-        // Ejemplo: "12345PROD001001" o "12345-PROD-001"
-        if (code.Contains("-"))
+        foreach (DataRow row in catalogo.Rows)
         {
-            var partes = code.Split('-');
-            if (partes.Length >= 3)
-            {
-                return new EtiquetaInfo
-                {
-                    Recibo = partes[0].TrimStart('0'),
-                    ProdClave = partes[1].Trim(),
-                    Tarima = partes[partes.Length - 1].TrimStart('0'),
-                    Tipo = "PTC"
-                };
-            }
-        }
-        return null;
-    }
+            string clave = row["prod_clave"].ToString().Trim();
+            string tipo = row["prod_tipo"].ToString().Trim();
 
-    private static EtiquetaParseResult? ParseDesdeUrl(string code)
-    {
-        // Extraer id_codigo de la URL y marcarlo para lookup
-        foreach (var url in UrlsTrazabilidad)
-        {
-            if (code.Contains(url, StringComparison.OrdinalIgnoreCase))
+            if (textoEtiqueta.Contains(clave))
             {
-                var idCodigo = code.Substring(code.IndexOf("id_codigo=", StringComparison.OrdinalIgnoreCase) + 10);
+                int indexProducto = textoEtiqueta.IndexOf(clave);
+
+                string vRecibo = textoEtiqueta.Substring(0, indexProducto).TrimStart('0');
+
+                // ✅ OBTENEMOS EL RAW Y LO LIMPIAMOS CON LA NUEVA REGLA
+                string tarimaRaw = textoEtiqueta.Substring(indexProducto + clave.Length);
+                string vTarima = ExtraerTarimaReal(tarimaRaw);
+
+                if (string.IsNullOrWhiteSpace(vRecibo))
+                    continue;
+
                 return new EtiquetaParseResult
                 {
-                    CodigoRaw = code,
-                    RequiereLookup = true,
-                    LookupTipo = "URL_TRAZABILIDAD",
-                    LookupValor = idCodigo
+                    ProdClave = clave,
+                    Recibo = vRecibo,
+                    Tarima = vTarima, // ✅ Ahora tendrá solo "14" en vez de "1405" o "014023"
+                    Tipo = tipo,
+                    CodigoRaw = textoEtiqueta,
+                    RequiereLookup = false
                 };
             }
         }
         return null;
     }
 
-    private static bool EsUrlTrazabilidad(string code)
-        => UrlsTrazabilidad.Any(u => code.Contains(u, StringComparison.OrdinalIgnoreCase));
-
-    private class EtiquetaInfo
+    // --- Agrega este método ---
+    private static string ExtraerTarimaReal(string tarimaRaw)
     {
-        public string Recibo { get; set; } = string.Empty;
-        public string ProdClave { get; set; } = string.Empty;
-        public string Tarima { get; set; } = string.Empty;
-        public string Tipo { get; set; } = string.Empty;
+        if (string.IsNullOrWhiteSpace(tarimaRaw)) return tarimaRaw;
+
+        string tarima = tarimaRaw.Trim();
+        int longitud = tarima.Length;
+
+        if (longitud == 3)
+        {
+            // Regla: 3 dígitos -> Son puros números de tarima
+            return tarima.TrimStart('0');
+        }
+        else if (longitud == 4)
+        {
+            // Regla: 4 dígitos -> Los primeros 2 son tarima, los últimos 2 son total
+            return tarima.Substring(0, 2).TrimStart('0');
+        }
+        else if (longitud == 6)
+        {
+            // Regla: 6 dígitos -> Los primeros 3 son tarima, los últimos 3 son total
+            return tarima.Substring(0, 3).TrimStart('0');
+        }
+
+        // Fallback para cualquier otra cosa rara que escaneen
+        return tarima.TrimStart('0');
     }
+
+    public bool EsCodigoValido(string code) => !string.IsNullOrWhiteSpace(code) && code.Length > 10;
 }
 
-// ── Resultado del parseo ──────────────────────────────────────────────────────
+// ── Resultado del parseo ──────────────────────────────────────────────────
 
 public class EtiquetaParseResult
 {
@@ -305,15 +130,20 @@ public class EtiquetaParseResult
     public string LookupTipo { get; set; } = string.Empty;
     public string LookupValor { get; set; } = string.Empty;
 
-    public string BatchId => $"{ProdClave.Trim()}-{Recibo.TrimStart('0').Trim()}-{Tarima.TrimStart('0').Trim()}";
-    public bool EsCompleto => !string.IsNullOrEmpty(ProdClave) && !string.IsNullOrEmpty(Recibo) && !RequiereLookup;
+    // ✅ ORDEN CORRECTO: Recibo - Producto - Tarima
+    public string BatchId =>
+        $"{Recibo.TrimStart('0')}-{ProdClave.Trim()}-{Tarima.TrimStart('0')}".ToUpper();
+
+    public bool EsCompleto => !string.IsNullOrEmpty(ProdClave)
+                           && !string.IsNullOrEmpty(Recibo)
+                           && !RequiereLookup;
 }
 
-// ── Interfaz ──────────────────────────────────────────────────────────────────
+// ── Interfaz ──────────────────────────────────────────────────────────────
 
 public interface IScannerService
 {
+    DataTable? CatalogoActual { get; set; }
     EtiquetaParseResult? Parse(string rawCode);
     bool EsCodigoValido(string code);
-    string FormatearBatchId(string prodClave, string recibo, string tarima);
 }

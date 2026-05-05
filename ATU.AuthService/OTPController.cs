@@ -205,8 +205,8 @@ public class OTPController : ControllerBase
                 LTRIM(RTRIM(emb_folio))  AS EmbFolio,
                 LTRIM(RTRIM(prod_clave)) AS ProdClave,
                 LTRIM(RTRIM(producto))   AS Producto,
-                LTRIM(RTRIM(recibo_sug)) AS ReciboSug,
-                CAST(tarimasug AS VARCHAR) AS TarimaSug,
+                LTRIM(RTRIM(recibo_cap)) AS ReciboCap,
+                CAST(tarimacap AS VARCHAR) AS TarimaCap,
                 LTRIM(RTRIM(responsable)) AS Responsable,
                 LTRIM(RTRIM(motivo))     AS Motivo,
                 fechareal                AS FechaCreacion

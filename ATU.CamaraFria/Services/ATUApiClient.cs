@@ -1,10 +1,12 @@
-﻿using System.Net.Http;
-using System.Text.Json;
-using ATU.CamaraFria.Models;
+﻿using ATU.CamaraFria.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Networking;
 using Microsoft.Maui.Storage;
+using Org.Apache.Http.Client;
 using Refit;
+using System.Data;
+using System.Net.Http;
+using System.Text.Json;
 
 namespace ATU.CamaraFria.Services;
 
@@ -32,6 +34,9 @@ public interface IATUApi
 
     [Get("/health")]
     Task<HealthResponse> HealthCheck();
+
+    [Get("/api/scanner/catalogo")]
+    Task<List<Dictionary<string, string>>> GetCatalogoDll();
 }
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -265,6 +270,41 @@ public class ATUApiClient
         if (json == null) return null;
         try { return JsonSerializer.Deserialize<OTPData>(json); }
         catch { return null; }
+    }
+
+    public async Task<DataTable> GetCatalogoDllAsync()
+    {
+        try
+        {
+            // 1. Llamada directa a la interfaz Refit
+            var lista = await _api.GetCatalogoDll();
+
+            // 2. Crear el DataTable con la estructura que la DLL de anclaje requiere
+            DataTable dt = new DataTable();
+            dt.Columns.Add("prod_clave", typeof(string));
+            dt.Columns.Add("prod_tipo", typeof(string));
+
+            if (lista != null)
+            {
+                foreach (var item in lista)
+                {
+                    // Extraemos los valores del diccionario (JSON)
+                    // Usamos TryGetValue para evitar errores si el API cambia nombres
+                    string clave = item.ContainsKey("prod_clave") ? item["prod_clave"] : "";
+                    string tipo = item.ContainsKey("prod_tipo") ? item["prod_tipo"] : "PTP";
+
+                    dt.Rows.Add(clave, tipo);
+                }
+            }
+
+            _logger.LogInformation("Catálogo sincronizado: {Count} productos", dt.Rows.Count);
+            return dt;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener catálogo para la DLL");
+            return new DataTable(); // Retorna tabla vacía para no romper el scanner
+        }
     }
 }
 

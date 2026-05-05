@@ -1,6 +1,121 @@
 ﻿<?xml version="1.0" encoding="UTF-8" ?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!--  Estilos limpios para ATU Cámara Fría  -->
+    <!--  =========================  -->
+    <!--  🎨 COLORES BASE  -->
+    <!--  =========================  -->
+
+    <Color x:Key="ColorBackground">#070B18</Color>
+    <Color x:Key="ColorSurface">#0D1525</Color>
+    <Color x:Key="ColorSurfaceSoft">#13203A</Color>
+
+    <Color x:Key="ColorPrimary">#00BFFF</Color>
+    <Color x:Key="ColorSuccess">#44FF88</Color>
+    <Color x:Key="ColorWarning">#FFB800</Color>
+    <Color x:Key="ColorError">#FF5E5E</Color>
+
+    <Color x:Key="ColorTextPrimary">#FFFFFF</Color>
+    <Color x:Key="ColorTextSecondary">#8AA0BC</Color>
+    <Color x:Key="ColorTextMuted">#3A5070</Color>
+
+    <!--  =========================  -->
+    <!--  🔤 TIPOGRAFÍA  -->
+    <!--  =========================  -->
+
+    <Style x:Key="TitleLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+    </Style>
+
+    <Style x:Key="SubtitleLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{StaticResource ColorTextSecondary}" />
+    </Style>
+
+    <Style x:Key="CaptionLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource ColorTextMuted}" />
+    </Style>
+
+    <!--  =========================  -->
+    <!--  📦 CONTENEDORES  -->
+    <!--  =========================  -->
+
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorSurface}" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="Padding" Value="14" />
+    </Style>
+
+    <Style x:Key="InputContainer" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorSurfaceSoft}" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <!--  =========================  -->
+    <!--  ✏️ INPUTS  -->
+    <!--  =========================  -->
+
+    <Style x:Key="EntryStyle" TargetType="Entry">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="PlaceholderColor" Value="#5A7FA8" />
+    </Style>
+
+    <!--  =========================  -->
+    <!--  🔘 BOTONES  -->
+    <!--  =========================  -->
+
+    <!--  Primario  -->
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorPrimary}" />
+        <Setter Property="TextColor" Value="Black" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="HeightRequest" Value="50" />
+    </Style>
+
+    <!--  Secundario  -->
+    <Style x:Key="SecondaryButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="#1E3050" />
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="HeightRequest" Value="48" />
+    </Style>
+
+    <!--  Peligro  -->
+    <Style x:Key="DangerButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="#2A0A10" />
+        <Setter Property="TextColor" Value="{StaticResource ColorError}" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="HeightRequest" Value="50" />
+    </Style>
+
+    <!--  Botón compacto (listas)  -->
+    <Style x:Key="SmallActionButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorPrimary}" />
+        <Setter Property="TextColor" Value="Black" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="HeightRequest" Value="36" />
+        <Setter Property="Padding" Value="18,0" />
+    </Style>
+
+    <!--  =========================  -->
+    <!--  🔄 LOADING  -->
+    <!--  =========================  -->
+
+    <Style x:Key="PrimaryLoader" TargetType="ActivityIndicator">
+        <Setter Property="Color" Value="{StaticResource ColorPrimary}" />
+    </Style>
 
 </ResourceDictionary>

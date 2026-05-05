@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
+using System.Data;
 
 namespace ATU.CamaraFria.ViewModels;
 
@@ -67,7 +68,7 @@ public partial class OTPViewModel : BaseViewModel
         string producto = "", string responsable = "", string motivo = "")
     {
         EmbFolio = embFolio;
-        BatchId = _scanner.FormatearBatchId(prodClave, reciboSug, tarimaSug);
+        BatchId = $"{reciboSug.TrimStart('0')}-{prodClave.Trim()}-{tarimaSug.TrimStart('0')}".ToUpper();
         InfoProducto = $"{prodClave.Trim()} — {producto.Trim()}";
         InfoSolicitante = responsable.Trim();
         MotivoSolicitud = motivo.Trim();
@@ -151,65 +152,87 @@ public partial class OTPViewModel : BaseViewModel
         var raw = CodigoPalletConfirmar.Trim();
         CodigoPalletConfirmar = string.Empty;
 
-        if (string.IsNullOrEmpty(raw))
-        {
-            SolicitarFocoConfirmar?.Invoke();
-            return;
-        }
+        if (string.IsNullOrEmpty(raw)) return;
 
         IsProcessing = true;
         try
         {
+            // 1. Intentamos parsear para ver si es una etiqueta verde válida
             var resultado = _scanner.Parse(raw);
             string batchEscaneado;
 
+            // 2. Resolvemos el ID para comparar (Usa la DLL interna)
             if (resultado != null && resultado.EsCompleto)
             {
-                batchEscaneado = resultado.BatchId;
-            }
-            else if (resultado?.RequiereLookup == true)
-            {
-                // Para la confirmación, hacemos lookup en el backend
-                batchEscaneado = await ResolverBatchIdAsync(raw, resultado);
+                // Si la DLL lo reconoció, lo armamos en el orden correcto
+                batchEscaneado = $"{resultado.Recibo}-{resultado.ProdClave}-{resultado.Tarima}";
             }
             else
             {
-                // Usar el código raw como referencia de comparación
+                // Si la DLL NO lo reconoció (como te pasó ahorita)
+                // intentamos un split visual básico o mostramos el raw
                 batchEscaneado = raw;
             }
 
-            // Comparación flexible (el batchId del folio puede tener formato diferente)
-            bool coincide = VerificarCoincidencia(BatchId, batchEscaneado, raw);
+            // 3. Validamos con el orden Recibo-Producto-Tarima
+            bool coincide = VerificarCoincidencia(BatchId, raw);
 
             if (!coincide)
             {
-                InstruccionConfirmar =
-                    $"El pallet escaneado no coincide con la solicitud.\n\n" +
-                    $"Esperado: {BatchId}\n" +
-                    $"Escaneado: {batchEscaneado}\n\n" +
-                    "Verifica que estés en el pallet correcto y vuelve a escanear.";
+                // Aquí es donde mostramos el error con el formato que quieres
+                string textoAMostrar = FormatearLoteLeido(raw);
+
+                InstruccionConfirmar = "❌ PALLET INCORRECTO\n\n" +
+                                      $"Esperado: {BatchId}\n" +
+                                      $"Leído: {textoAMostrar}\n\n" +
+                                      "La etiqueta no coincide con el lote solicitado.";
+
                 PalletConfirmadoTexto = string.Empty;
                 SolicitarFocoConfirmar?.Invoke();
                 return;
             }
 
+            // Si coincide, procedemos...
             PalletConfirmado = true;
-            PalletConfirmadoTexto = $"✓ Pallet verificado: {batchEscaneado}";
-            InstruccionConfirmar = "Pallet confirmado. Generando OTP...";
-
+            PalletConfirmadoTexto = $"✓ Verificado: {batchEscaneado}";
             await GenerarOTPFolioAsync();
         }
         catch (Exception ex)
         {
             InstruccionConfirmar = $"Error: {ex.Message}";
-            SolicitarFocoConfirmar?.Invoke();
         }
-        finally
-        {
-            IsProcessing = false;
-        }
+        finally { IsProcessing = false; }
     }
+    private string FormatearLoteLeido(string codigoRaw)
+    {
+        var resultado = _scanner.Parse(codigoRaw);
+        if (resultado?.EsCompleto == true)
+            return resultado.BatchId;
 
+        if (!string.IsNullOrEmpty(BatchId) && BatchId.Contains('-'))
+        {
+            var partes = BatchId.Split('-');
+            if (partes.Length == 3)
+            {
+                string prod = partes[1].Trim();
+                string rawLimpio = codigoRaw.Replace("-", "").ToUpperInvariant();
+
+                if (rawLimpio.Contains(prod))
+                {
+                    int idx = rawLimpio.IndexOf(prod, StringComparison.Ordinal);
+                    string rec = rawLimpio.Substring(0, idx).TrimStart('0');
+
+                    // ✅ APLICAR LIMPIADOR A LA TARIMA PARA MOSTRARLA
+                    string tarimaRaw = rawLimpio.Substring(idx + prod.Length);
+                    string tar = LimpiarTarimaEscaneada(tarimaRaw);
+
+                    return $"{rec}-{prod}-{tar}";
+                }
+            }
+        }
+
+        return codigoRaw;
+    }
     // ── Reset ─────────────────────────────────────────────────────────────────
     [RelayCommand]
     public void ResetScan()
@@ -334,24 +357,121 @@ public partial class OTPViewModel : BaseViewModel
         ShowConfirmarFolio = p == Panel.ConfirmarFolio;
         ShowOTP = p == Panel.OTP;
     }
-
-    private static bool VerificarCoincidencia(string esperado, string escaneado, string raw)
+    private bool VerificarCoincidencia(string esperado, string escaneado)
     {
-        // Comparación normalizada: quitar guiones, ceros al inicio, mayúsculas
-        string Normalizar(string s) => s.Replace("-", "").TrimStart('0').ToUpperInvariant();
+        string normEsperado = esperado.Replace("-", "").TrimStart('0').ToUpperInvariant();
+        string normEscaneado = escaneado.Replace("-", "").TrimStart('0').ToUpperInvariant();
 
-        var e = Normalizar(esperado);
-        var s = Normalizar(escaneado);
-        var r = Normalizar(raw);
+        if (normEsperado == normEscaneado)
+            return true;
 
-        return e == s || e.Contains(s) || s.Contains(e) || e == r || e.Contains(r);
+        var partes = esperado.Split('-');
+        if (partes.Length == 3)
+        {
+            string productoEsperado = partes[1].Trim();
+
+            if (normEscaneado.Contains(productoEsperado))
+            {
+                int idxProducto = normEscaneado.IndexOf(productoEsperado, StringComparison.Ordinal);
+
+                string reciboEscaneado = normEscaneado.Substring(0, idxProducto).TrimStart('0');
+
+                // ✅ APLICAR LIMPIADOR A LA TARIMA ESCANEADA
+                string tarimaRawEscaneada = normEscaneado.Substring(idxProducto + productoEsperado.Length);
+                string tarimaEscaneada = LimpiarTarimaEscaneada(tarimaRawEscaneada);
+
+                bool reciboOk = reciboEscaneado == partes[0].TrimStart('0');
+                bool tarimaOk = tarimaEscaneada == partes[2].TrimStart('0');
+
+                return reciboOk && tarimaOk;
+            }
+        }
+
+        return false;
     }
 
     private async Task<string> ResolverBatchIdAsync(string raw, EtiquetaParseResult resultado)
     {
-        // Por ahora devolver el código raw para comparación
-        // En una versión futura el backend resuelve via /api/otp/resolve-barcode
-        await Task.CompletedTask;
+        // Si el resultado ya tiene el BatchId (porque el primer intento fue exitoso)
+        if (resultado != null && !string.IsNullOrEmpty(resultado.BatchId))
+        {
+            return resultado.BatchId;
+        }
+
+        // Si no, forzamos un segundo intento de Parseo usando la DLL 
+        // (Esto ayuda si el primer intento fue superficial)
+        var segundoIntento = _scanner.Parse(raw);
+
+        if (segundoIntento != null && !string.IsNullOrEmpty(segundoIntento.BatchId))
+        {
+            return segundoIntento.BatchId;
+        }
+
+        // Si de plano la etiqueta es ilegible para la DLL, regresamos el raw
+        // pero habiendo esperado un ciclo de CPU para no bloquear la UI
+        await Task.Yield();
         return raw;
+    }
+
+    public async Task OnAppearing()
+    {
+        // Solo cargamos si el catálogo está vacío para no gastar datos/tiempo de más
+        if (_scanner.CatalogoActual == null || _scanner.CatalogoActual.Rows.Count == 0)
+        {
+            await SincronizarCatalogoAsync();
+        }
+    }
+    private async Task SincronizarCatalogoAsync()
+    {
+        try
+        {
+            IsProcessing = true;
+            StatusMessage = "Sincronizando catálogo de productos...";
+
+            // Bajamos el DataTable desde el API Client que corregimos antes
+            DataTable dt = await _apiClient.GetCatalogoDllAsync();
+
+            // Inyectamos el catálogo en el servicio del scanner (donde está la DLL)
+            _scanner.CatalogoActual = dt;
+
+            if (dt.Rows.Count > 0)
+            {
+                StatusMessage = "Scanner listo (Modo Inteligente)";
+                StatusColor = "#8AA0BC";
+            }
+            else
+            {
+                StatusMessage = "Scanner listo (Modo Básico)";
+                StatusColor = "#FFAA00";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "Error de sincronización";
+            StatusColor = "#FF4444";
+        }
+        finally
+        {
+            IsProcessing = false;
+            SolicitarFocoEntrada?.Invoke();
+        }
+    }
+
+    // --- Agrega este método dentro de OTPViewModel ---
+    private static string LimpiarTarimaEscaneada(string tarimaRaw)
+    {
+        if (string.IsNullOrWhiteSpace(tarimaRaw)) return tarimaRaw;
+
+        string tarima = tarimaRaw.Trim();
+        int longitud = tarima.Length;
+
+        if (longitud == 3)
+            return tarima.TrimStart('0');
+        else if (longitud == 4)
+            return tarima.Substring(0, 2).TrimStart('0');
+        else if (longitud == 6)
+            return tarima.Substring(0, 3).TrimStart('0');
+
+        return tarima.TrimStart('0');
     }
 }

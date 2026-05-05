@@ -9,8 +9,8 @@ public class SolicitudVm
     public string EmbFolio { get; set; } = string.Empty;
     public string ProdClave { get; set; } = string.Empty;
     public string Producto { get; set; } = string.Empty;
-    public string ReciboSug { get; set; } = string.Empty;
-    public string TarimaSug { get; set; } = string.Empty;
+    public string ReciboCap { get; set; } = string.Empty;
+    public string TarimaCap { get; set; } = string.Empty;
     public string Responsable { get; set; } = string.Empty;
     public string Motivo { get; set; } = string.Empty;
     public DateTime FechaCreacion { get; set; }
@@ -18,7 +18,7 @@ public class SolicitudVm
     // ── Propiedades de display (calculadas, no se serializan) ───────────────
     public string TituloFolio => $"Folio {EmbFolio}";
     public string InfoProducto => $"{ProdClave} — {Producto}";
-    public string InfoPallet => $"Recibo: {ReciboSug}  ·  Tarima: {TarimaSug}";
+    public string InfoPallet => $"Recibo: {ReciboCap}  ·  Tarima: {TarimaCap}";
     public string InfoSolicitante => $"Solicitó: {Responsable}";
     public string ColorBorde => "#00BFFF";
 

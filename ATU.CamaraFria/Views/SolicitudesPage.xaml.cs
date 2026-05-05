@@ -60,8 +60,8 @@ public partial class SolicitudesPage : ContentPage
             vm.CargarFolioAdelantado(
                 solicitud.EmbFolio,
                 solicitud.ProdClave,
-                solicitud.ReciboSug,
-                solicitud.TarimaSug,
+                solicitud.ReciboCap,
+                solicitud.TarimaCap,
                 solicitud.Producto,
                 solicitud.Responsable,
                 solicitud.Motivo);
