@@ -301,7 +301,7 @@ public partial class OTPViewModel : BaseViewModel
         IsProcessing = true;
         try
         {
-            var resp = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, _supervisorId);
+            var resp = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, _supervisorId, BatchId);
             if (resp?.Success == true && resp.Data != null)
             {
                 if (!string.IsNullOrEmpty(resp.Data.BatchId)) BatchId = resp.Data.BatchId;

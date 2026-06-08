@@ -44,7 +44,6 @@ public interface IATUApi
 public class ValidateOTPRequest
 {
     public string Code { get; set; } = string.Empty;
-    public string BatchId { get; set; } = string.Empty;
     public string SupervisorId { get; set; } = string.Empty;
     public string DeviceFingerprint { get; set; } = string.Empty;
 }
@@ -60,6 +59,7 @@ public class ValidationResponse
 public class GenerateOtpFolioRequest
 {
     public string EmbFolio { get; set; } = string.Empty;
+    public string BatchId { get; set; } = string.Empty;
     public string SupervisorId { get; set; } = string.Empty;
     public string DeviceFingerprint { get; set; } = string.Empty;
 }
@@ -179,7 +179,7 @@ public class ATUApiClient
 
     // ── Generar OTP para folio adelantado ────────────────────────────────────
 
-    public async Task<OTPResponse?> GenerateOTPForFolioAsync(string embFolio, string supervisorId)
+    public async Task<OTPResponse?> GenerateOTPForFolioAsync(string embFolio, string supervisorId, string batchId)
     {
         try
         {
@@ -189,6 +189,7 @@ public class ATUApiClient
             return await _api.GenerateOTPForFolio(new GenerateOtpFolioRequest
             {
                 EmbFolio = embFolio,
+                BatchId = batchId,
                 SupervisorId = supervisorId,
                 DeviceFingerprint = _deviceFingerprint
             });
@@ -231,7 +232,6 @@ public class ATUApiClient
             return await _api.ValidateOTP(new ValidateOTPRequest
             {
                 Code = code,
-                BatchId = batchId,
                 SupervisorId = supervisorId,
                 DeviceFingerprint = _deviceFingerprint
             });

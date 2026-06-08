@@ -3,170 +3,194 @@
     x:Class="ATU.CamaraFria.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     Title="Configuración"
-    Padding="{OnPlatform iOS='0,36,0,0',
-                         Default='0'}"
+    Padding="{OnPlatform iOS='0,48,0,0',
+                         Default='0,12,0,12'}"
+    ios:Page.UseSafeArea="True"
     BackgroundColor="#070B18">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="18">
+        <VerticalStackLayout Padding="18" Spacing="22">
 
             <!--  SESIÓN  -->
             <Label
-                FontSize="11"
+                FontAttributes="Bold"
+                FontSize="13"
                 Text="SESIÓN ACTIVA"
-                TextColor="#6A8FB0" />
+                TextColor="#8CA0C0" />
 
             <Border
-                Padding="16"
-                BackgroundColor="#0D1525"
-                StrokeShape="RoundRectangle 16"
+                Padding="18"
+                BackgroundColor="#0F1724"
+                StrokeShape="RoundRectangle 18"
                 StrokeThickness="0">
 
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                     <Label
-                        FontSize="22"
+                        FontSize="26"
                         Text="👤"
                         VerticalOptions="Center" />
 
-                    <VerticalStackLayout Spacing="2">
+                    <VerticalStackLayout Spacing="4">
                         <Label
                             x:Name="LblNombre"
                             FontAttributes="Bold"
-                            FontSize="17"
-                            TextColor="White" />
+                            FontSize="19"
+                            TextColor="#FFFFFF" />
                         <Label
                             x:Name="LblEmpleado"
-                            FontSize="13"
-                            TextColor="#6A8FB0" />
+                            FontSize="15"
+                            TextColor="#8CA0C0" />
                     </VerticalStackLayout>
                 </Grid>
             </Border>
 
             <!--  SERVIDOR  -->
             <Label
-                FontSize="11"
+                FontAttributes="Bold"
+                FontSize="13"
                 Text="SERVIDOR ATU"
-                TextColor="#6A8FB0" />
+                TextColor="#8CA0C0" />
 
             <Border
-                Padding="14"
-                BackgroundColor="#0D1525"
-                StrokeShape="RoundRectangle 16"
+                Padding="18"
+                BackgroundColor="#0F1724"
+                StrokeShape="RoundRectangle 18"
                 StrokeThickness="0">
 
-                <VerticalStackLayout Spacing="12">
+                <VerticalStackLayout Spacing="14">
 
                     <Label
-                        FontSize="13"
+                        FontAttributes="Bold"
+                        FontSize="15"
                         Text="URL del servidor"
-                        TextColor="#6A8FB0" />
+                        TextColor="#FFFFFF" />
 
                     <!--  INPUT estilo iOS  -->
                     <Border
-                        Padding="12"
-                        BackgroundColor="#13203A"
+                        Padding="14"
+                        BackgroundColor="#0A1120"
+                        Stroke="#2A4A70"
                         StrokeShape="RoundRectangle 12"
-                        StrokeThickness="0">
+                        StrokeThickness="1">
 
                         <Entry
                             x:Name="EntryUrl"
-                            FontSize="14"
+                            FontSize="16"
+                            HeightRequest="44"
                             Keyboard="Url"
                             Placeholder="http://192.168.x.x:5059"
-                            PlaceholderColor="#5A7FA8"
-                            TextColor="White" />
+                            PlaceholderColor="#4A6080"
+                            TextColor="#FFFFFF" />
                     </Border>
 
                     <!--  BOTONES  -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
 
                         <Button
                             Grid.Column="0"
-                            BackgroundColor="#00BFFF"
+                            Padding="0"
+                            BackgroundColor="#0A84FF"
                             Clicked="OnGuardarUrl"
                             CornerRadius="14"
                             FontAttributes="Bold"
-                            FontSize="15"
-                            HeightRequest="48"
+                            FontSize="16"
+                            HeightRequest="52"
                             Text="Guardar"
-                            TextColor="Black" />
+                            TextColor="#FFFFFF">
+                            <Button.Shadow>
+                                <Shadow
+                                    Brush="#0A84FF"
+                                    Opacity="0.30"
+                                    Radius="8"
+                                    Offset="0,3" />
+                            </Button.Shadow>
+                        </Button>
 
                         <Button
                             Grid.Column="1"
-                            BackgroundColor="#1E3050"
+                            Padding="0"
+                            BackgroundColor="#1E3A5F"
                             Clicked="OnProbarConexion"
                             CornerRadius="14"
-                            FontSize="15"
-                            HeightRequest="48"
+                            FontSize="16"
+                            HeightRequest="52"
                             Text="Probar"
-                            TextColor="White" />
+                            TextColor="#FFFFFF" />
 
                     </Grid>
 
                     <Label
                         x:Name="LblEstadoConexion"
-                        FontSize="13"
+                        FontAttributes="Bold"
+                        FontSize="15"
                         HorizontalOptions="Center"
-                        TextColor="#6A8FB0" />
+                        TextColor="#8CA0C0" />
 
                 </VerticalStackLayout>
             </Border>
 
             <!--  DISPOSITIVO  -->
             <Label
-                FontSize="11"
+                FontAttributes="Bold"
+                FontSize="13"
                 Text="DISPOSITIVO"
-                TextColor="#6A8FB0" />
+                TextColor="#8CA0C0" />
 
             <Border
-                Padding="14"
-                BackgroundColor="#0D1525"
-                StrokeShape="RoundRectangle 16"
+                Padding="18"
+                BackgroundColor="#0F1724"
+                StrokeShape="RoundRectangle 18"
                 StrokeThickness="0">
 
-                <VerticalStackLayout Spacing="10">
+                <VerticalStackLayout Spacing="12">
 
                     <!--  FILAS tipo iOS  -->
                     <Grid ColumnDefinitions="Auto,*">
                         <Label
-                            FontSize="13"
+                            FontAttributes="Bold"
+                            FontSize="15"
                             Text="Modelo"
-                            TextColor="#6A8FB0" />
+                            TextColor="#8CA0C0" />
                         <Label
                             x:Name="LblModelo"
                             Grid.Column="1"
-                            FontSize="13"
-                            TextColor="White" />
+                            FontAttributes="Bold"
+                            FontSize="15"
+                            TextColor="#FFFFFF" />
                     </Grid>
 
-                    <BoxView HeightRequest="1" Color="#1E3050" />
+                    <BoxView HeightRequest="1" Color="#1E3A5F" />
 
                     <Grid ColumnDefinitions="Auto,*">
                         <Label
-                            FontSize="13"
+                            FontAttributes="Bold"
+                            FontSize="15"
                             Text="Android"
-                            TextColor="#6A8FB0" />
+                            TextColor="#8CA0C0" />
                         <Label
                             x:Name="LblAndroid"
                             Grid.Column="1"
-                            FontSize="13"
-                            TextColor="White" />
+                            FontAttributes="Bold"
+                            FontSize="15"
+                            TextColor="#FFFFFF" />
                     </Grid>
 
-                    <BoxView HeightRequest="1" Color="#1E3050" />
+                    <BoxView HeightRequest="1" Color="#1E3A5F" />
 
                     <Grid ColumnDefinitions="Auto,*">
                         <Label
-                            FontSize="13"
+                            FontAttributes="Bold"
+                            FontSize="15"
                             Text="Device ID"
-                            TextColor="#6A8FB0" />
+                            TextColor="#8CA0C0" />
                         <Label
                             x:Name="LblDeviceId"
                             Grid.Column="1"
-                            FontSize="11"
+                            FontSize="13"
                             LineBreakMode="CharacterWrap"
-                            TextColor="White" />
+                            TextColor="#FFFFFF" />
                     </Grid>
 
                 </VerticalStackLayout>
@@ -174,23 +198,24 @@
 
             <!--  LOGOUT  -->
             <Button
-                Margin="0,10,0,0"
+                Margin="0,12,0,0"
+                Padding="0"
                 BackgroundColor="#2A0A10"
                 Clicked="OnCerrarSesion"
                 CornerRadius="16"
                 FontAttributes="Bold"
-                FontSize="16"
-                HeightRequest="52"
+                FontSize="17"
+                HeightRequest="56"
                 Text="Cerrar Sesión"
-                TextColor="#FF5E5E" />
+                TextColor="#FF453A" />
 
             <!--  VERSION  -->
             <Label
-                Margin="0,10"
-                FontSize="10"
+                Margin="0,12"
+                FontSize="12"
                 HorizontalOptions="Center"
                 Text="ATU Cámara Fría v1.0 · mrlucky"
-                TextColor="#3A5070" />
+                TextColor="#4A6080" />
 
         </VerticalStackLayout>
     </ScrollView>

@@ -3,10 +3,12 @@
     x:Class="ATU.CamaraFria.Views.SolicitudesPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:models="clr-namespace:ATU.CamaraFria.Models"
     Title="Solicitudes"
-    Padding="{OnPlatform iOS='0,36,0,0',
-                         Default='0'}"
+    Padding="{OnPlatform iOS='0,48,0,0',
+                         Default='0,12,0,12'}"
+    ios:Page.UseSafeArea="True"
     BackgroundColor="#070B18">
 
     <Grid RowDefinitions="Auto,*,Auto">
@@ -14,59 +16,61 @@
         <!--  HEADER (más limpio tipo iOS)  -->
         <Grid
             Grid.Row="0"
-            Padding="16,12"
+            Padding="18,14"
             ColumnDefinitions="*,Auto">
 
-            <VerticalStackLayout Spacing="2">
+            <VerticalStackLayout Spacing="4">
                 <Label
                     FontAttributes="Bold"
-                    FontSize="18"
+                    FontSize="22"
                     Text="Solicitudes"
-                    TextColor="White" />
+                    TextColor="#FFFFFF" />
                 <Label
                     x:Name="LblUltimaActualizacion"
-                    FontSize="11"
-                    TextColor="#6A8FB0" />
+                    FontSize="13"
+                    TextColor="#8CA0C0" />
             </VerticalStackLayout>
 
             <Button
                 Grid.Column="1"
-                BackgroundColor="#0D1525"
+                Padding="0"
+                BackgroundColor="#0F1724"
                 Clicked="OnRefrescar"
-                CornerRadius="22"
-                FontSize="20"
-                HeightRequest="44"
+                CornerRadius="24"
+                FontSize="22"
+                HeightRequest="48"
                 Text="↻"
-                TextColor="#00BFFF"
-                WidthRequest="44" />
+                TextColor="#0A84FF"
+                WidthRequest="48" />
         </Grid>
 
         <!--  LISTA  -->
         <RefreshView
             x:Name="RefreshView"
             Grid.Row="1"
-            RefreshColor="#00BFFF"
+            RefreshColor="#0A84FF"
             Refreshing="OnRefrescar">
 
-            <CollectionView x:Name="ListaSolicitudes" Margin="12,0">
+            <CollectionView x:Name="ListaSolicitudes" Margin="14,0">
 
                 <!--  EMPTY  -->
                 <CollectionView.EmptyView>
                     <VerticalStackLayout
                         Margin="0,80,0,0"
                         HorizontalOptions="Center"
-                        Spacing="10">
+                        Spacing="12">
 
-                        <Label FontSize="40" Text="📭" />
+                        <Label FontSize="52" Text="📭" />
                         <Label
-                            FontSize="15"
+                            FontAttributes="Bold"
+                            FontSize="18"
                             Text="Sin solicitudes"
-                            TextColor="#6A8FB0" />
+                            TextColor="#8CA0C0" />
                         <Label
-                            FontSize="12"
+                            FontSize="14"
                             HorizontalTextAlignment="Center"
                             Text="Las solicitudes aparecerán automáticamente"
-                            TextColor="#3A5070" />
+                            TextColor="#4A6080" />
                     </VerticalStackLayout>
                 </CollectionView.EmptyView>
 
@@ -87,65 +91,75 @@
 
                             <!--  CARD MÁS LIGERA  -->
                             <Border
-                                Margin="0,6"
-                                Padding="14"
-                                BackgroundColor="#0D1525"
-                                StrokeShape="RoundRectangle 18"
+                                Margin="0,8"
+                                Padding="16"
+                                BackgroundColor="#0F1724"
+                                StrokeShape="RoundRectangle 20"
                                 StrokeThickness="0">
 
-                                <VerticalStackLayout Spacing="8">
+                                <VerticalStackLayout Spacing="10">
 
                                     <!--  FILA 1  -->
                                     <Grid ColumnDefinitions="*,Auto">
                                         <Label
                                             FontAttributes="Bold"
-                                            FontSize="15"
+                                            FontSize="17"
                                             Text="{Binding TituloFolio}"
-                                            TextColor="White" />
+                                            TextColor="#FFFFFF" />
                                         <Label
                                             Grid.Column="1"
-                                            FontSize="11"
+                                            FontAttributes="Bold"
+                                            FontSize="13"
                                             Text="{Binding TiempoTranscurrido}"
-                                            TextColor="#6A8FB0" />
+                                            TextColor="#8CA0C0" />
                                     </Grid>
 
                                     <!--  PRODUCTO  -->
                                     <Label
                                         FontAttributes="Bold"
-                                        FontSize="14"
+                                        FontSize="16"
                                         LineBreakMode="TailTruncation"
                                         Text="{Binding InfoProducto}"
-                                        TextColor="#00BFFF" />
+                                        TextColor="#0A84FF" />
 
                                     <!--  PALLET  -->
                                     <Label
-                                        FontSize="12"
+                                        FontSize="14"
                                         Text="{Binding InfoPallet}"
-                                        TextColor="#8AA0BC" />
+                                        TextColor="#8CA0C0" />
 
                                     <!--  FOOTER  -->
                                     <Grid ColumnDefinitions="*,Auto">
 
                                         <Label
-                                            FontSize="12"
+                                            FontSize="14"
                                             LineBreakMode="TailTruncation"
                                             Text="{Binding InfoSolicitante}"
-                                            TextColor="#6A8FB0"
+                                            TextColor="#8CA0C0"
                                             VerticalOptions="Center" />
 
-                                        <!--  BOTÓN iOS STYLE  -->
+                                        <!--  BOTÓN iOS STYLE - Mínimo 44pt táctil  -->
                                         <Button
                                             Grid.Column="1"
-                                            Padding="18,0"
-                                            BackgroundColor="#00BFFF"
+                                            Padding="20,0"
+                                            BackgroundColor="#0A84FF"
                                             Clicked="OnAutorizarSolicitud"
                                             CommandParameter="{Binding .}"
-                                            CornerRadius="18"
+                                            CornerRadius="20"
                                             FontAttributes="Bold"
-                                            FontSize="13"
-                                            HeightRequest="36"
+                                            FontSize="15"
+                                            HeightRequest="44"
                                             Text="Autorizar"
-                                            TextColor="Black" />
+                                            TextColor="#FFFFFF"
+                                            VerticalOptions="Center">
+                                            <Button.Shadow>
+                                                <Shadow
+                                                    Brush="#0A84FF"
+                                                    Opacity="0.25"
+                                                    Radius="6"
+                                                    Offset="0,2" />
+                                            </Button.Shadow>
+                                        </Button>
                                     </Grid>
 
                                 </VerticalStackLayout>
@@ -160,11 +174,11 @@
         <!--  FOOTER  -->
         <Label
             Grid.Row="2"
-            Margin="0,6"
-            FontSize="10"
+            Margin="0,8"
+            FontSize="12"
             HorizontalOptions="Center"
             Text="Desliza para ignorar · Autoriza para generar OTP"
-            TextColor="#3A5070" />
+            TextColor="#4A6080" />
 
     </Grid>
 </ContentPage>

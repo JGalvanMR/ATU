@@ -39,6 +39,7 @@ public class AtuRequestRequest
 public class GenerateOtpFolioRequest
 {
     public string EmbFolio { get; set; } = string.Empty;
+    public string BatchId { get; set; } = string.Empty;
     public string SupervisorId { get; set; } = string.Empty;
     public string DeviceFingerprint { get; set; } = string.Empty;
 }
