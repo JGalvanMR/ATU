@@ -22,7 +22,7 @@ public partial class MainViewModel : BaseViewModel
     private string _supervisorName = string.Empty;
 
     [ObservableProperty]
-    private string _serverUrl = "http://192.168.123.155:5059";
+    private string _serverUrl = "http://192.168.123.155:5001";
 
     [ObservableProperty]
     private bool _isConnected;
@@ -50,7 +50,7 @@ public partial class MainViewModel : BaseViewModel
         _syncQueue = syncQueue;
         _logger = logger;
 
-        _serverUrl = Preferences.Get("SERVER_URL", "http://192.168.123.155:5059");
+        _serverUrl = Preferences.Get("SERVER_URL", "http://192.168.123.155:5001");
         _supervisorName = Preferences.Get("SUPERVISOR_NAME", string.Empty);
     }
 

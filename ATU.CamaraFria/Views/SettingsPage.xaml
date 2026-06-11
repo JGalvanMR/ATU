@@ -80,7 +80,7 @@
                             FontSize="16"
                             HeightRequest="44"
                             Keyboard="Url"
-                            Placeholder="http://192.168.x.x:5059"
+                            Placeholder="http://192.168.x.x:5001"
                             PlaceholderColor="#4A6080"
                             TextColor="#FFFFFF" />
                     </Border>

@@ -114,7 +114,7 @@ public class ATUApiClient
         _syncQueue = syncQueue;
         _logger = logger;
         _deviceFingerprint = fingerprintService.GetFingerprint();
-        _api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5059"));
+        _api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5001"));
     }
 
     public void SetBaseUrl(string url)
