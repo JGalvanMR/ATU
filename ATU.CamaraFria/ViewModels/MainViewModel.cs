@@ -98,7 +98,8 @@ public partial class MainViewModel : BaseViewModel
             var authenticated = await _biometricService.QuickAuthenticateAsync();
             if (!authenticated)
             {
-                await Shell.Current.DisplayAlertAsync(
+                // 🔽 Cambio aquí: DisplayAlert (sin Async)
+                await Shell.Current.DisplayAlert(
                     "Acceso Denegado",
                     "Autenticación biométrica requerida",
                     "OK");
@@ -125,7 +126,8 @@ public partial class MainViewModel : BaseViewModel
 
         if (processed > 0 || failed > 0)
         {
-            await Shell.Current.DisplayAlertAsync(
+            // 🔽 Cambio aquí: DisplayAlert (sin Async)
+            await Shell.Current.DisplayAlert(
                 "Sincronización",
                 $"Procesados: {processed}\nFallidos: {failed}",
                 "OK");
@@ -135,7 +137,8 @@ public partial class MainViewModel : BaseViewModel
     [RelayCommand]
     private async Task LogoutAsync()
     {
-        var confirm = await Shell.Current.DisplayAlertAsync(
+        // 🔽 Cambio aquí: DisplayAlert (sin Async) y devuelve bool
+        var confirm = await Shell.Current.DisplayAlert(
             "Cerrar Sesión",
             "¿Desea cerrar sesión?",
             "Sí", "No");

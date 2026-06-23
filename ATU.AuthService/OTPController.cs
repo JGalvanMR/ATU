@@ -371,13 +371,31 @@ public class OTPController : ControllerBase
             _ => "INVALID"
         };
 
-        await conn.ExecuteAsync(@"
-            UPDATE tb_det_folio_adelantado SET
+        var rowsAffected = await conn.ExecuteAsync(@"
+            UPDATE tb_det_folio_adelantado SET 
                 otp_status   = @status,
-                otp_usado_at = CASE WHEN @status = 'AUTHORIZED' THEN GETUTCDATE() ELSE NULL END,
-                otp_intentos = otp_intentos + 1
-            WHERE LTRIM(RTRIM(emb_folio)) = @f",
-            new { status = newStatus, f = req.EmbFolio.Trim() });
+                otp_usado_at = CASE WHEN @status='AUTHORIZED'
+                                    THEN GETUTCDATE()
+                                    ELSE otp_usado_at
+                               END
+             WHERE LTRIM(RTRIM(emb_folio)) = @f
+               AND otp_status = 'PENDING'",
+        new
+        {
+            status = newStatus,
+            f = req.EmbFolio.Trim()
+        });
+
+        if (rowsAffected == 0)
+        {
+            return Ok(new
+            {
+                success = false,
+                status = "Red",
+                message = "El folio ya fue procesado por otro usuario.",
+                isAuthorized = false
+            });
+        }
 
         // Marcar OTP en memoria como usado
         var stored = await _otps.GetByBatchAndSupervisorAsync(claimedBatchId, supId);

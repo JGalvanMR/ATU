@@ -323,7 +323,7 @@ public partial class OTPViewModel : BaseViewModel
         CountdownSeconds = seconds > 0 ? seconds : ATUApiClient.OtpTtlSeconds;
         MostrarPanel(Panel.OTP);
         IniciarCountdown();
-        if (HapticFeedback.IsSupported)
+        if (HapticFeedback.Default.IsSupported)
             HapticFeedback.Perform(HapticFeedbackType.LongPress);
     }
 

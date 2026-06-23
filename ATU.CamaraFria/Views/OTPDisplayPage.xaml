@@ -101,7 +101,7 @@
                 <Border
                     Padding="16"
                     BackgroundColor="#0A1120"
-                    IsVisible="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
+                    IsVisible="{Binding IsProcessing, Converter={StaticResource InverseBoolConverter}}"
                     Stroke="#1E3A5F"
                     StrokeShape="RoundRectangle 12"
                     StrokeThickness="1.5">

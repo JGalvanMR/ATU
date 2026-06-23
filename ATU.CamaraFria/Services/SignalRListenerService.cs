@@ -19,7 +19,7 @@ public class SignalRListenerService
 
     public SignalRListenerService()
     {
-        _baseUrl = Preferences.Get("SERVER_URL", "http://192.168.123.155:5001");
+        _baseUrl = Preferences.Get("SERVER_URL", "http://192.168.123.155:5046");
     }
 
     public async Task IniciarAsync()

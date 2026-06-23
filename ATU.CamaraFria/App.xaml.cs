@@ -20,23 +20,57 @@ public partial class App : Application
 
     public App(IServiceProvider services)
     {
-        InitializeComponent();
+        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+        {
+            var ex = args.ExceptionObject as Exception;
+            Android.Util.Log.Error("ATUApp", $"UNHANDLED EXCEPTION: {ex}");
+        };
+
+        TaskScheduler.UnobservedTaskException += (sender, args) =>
+        {
+            Android.Util.Log.Error("ATUApp", $"UNOBSERVED TASK EXCEPTION: {args.Exception}");
+            args.SetObserved();
+        };
+        Android.Util.Log.Debug("ATUApp", "App() constructor START");
+        try
+        {
+            InitializeComponent();
+            Android.Util.Log.Debug("ATUApp", "InitializeComponent OK");
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error("ATUApp", $"InitializeComponent FAILED: {ex}");
+            throw; // Re-lanzamos para que se vea
+        }
+
         _services = services;
+        Android.Util.Log.Debug("ATUApp", "App() constructor END");
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
+        Android.Util.Log.Debug("ATUApp", "CreateWindow START");
         try
         {
             var tieneSession = !string.IsNullOrEmpty(
                 Preferences.Get("AUTH_TOKEN", string.Empty));
+            Android.Util.Log.Debug("ATUApp", $"tieneSession = {tieneSession}");
 
-            return tieneSession
-                ? new Window(new AppShell())
-                : new Window(new NavigationPage(_services.GetRequiredService<LoginPage>()));
+            if (tieneSession)
+            {
+                Android.Util.Log.Debug("ATUApp", "Creando AppShell");
+                return new Window(new AppShell());
+            }
+            else
+            {
+                Android.Util.Log.Debug("ATUApp", "Creando LoginPage");
+                var loginPage = _services.GetRequiredService<LoginPage>();
+                return new Window(new NavigationPage(loginPage));
+            }
         }
         catch (Exception ex)
         {
+            Android.Util.Log.Error("ATUApp", $"CreateWindow ERROR: {ex}");
             return new Window(PaginaDeError(ex));
         }
     }
@@ -44,7 +78,7 @@ public partial class App : Application
     protected override void OnStart()
     {
         base.OnStart();
-
+        Android.Util.Log.Debug("ATUApp", "OnStart START");
         // El Foreground Service (ATUNotificationService) lo inicia MainActivity
         // Aquí solo procesamos la cola de sincronización offline si hay red
         var syncQueue = _services.GetService<SyncQueueService>();

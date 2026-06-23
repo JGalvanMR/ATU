@@ -42,7 +42,10 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize" >
+
+		
+		</activity>
 
 		<!-- Foreground Service de notificaciones ATU (on-premise, sin Firebase) -->
 		<service

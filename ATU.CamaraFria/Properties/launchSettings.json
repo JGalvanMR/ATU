@@ -2,7 +2,7 @@
   "profiles": {
     "ATU.CamaraFria": {
       "commandName": "Project",
-      "targetFramework": "net10.0-android",
+      "targetFramework": "net9.0-android",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

@@ -1,23 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net10.0-android</TargetFrameworks>
+		<TargetFrameworks>net9.0-android</TargetFrameworks>
 		<RootNamespace>ATU.CamaraFria</RootNamespace>
 		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<OutputType>Exe</OutputType>
-
+		
 		<ApplicationTitle>ATU Cámara Fría</ApplicationTitle>
 		<ApplicationId>com.mrlucky.atu.camarafria</ApplicationId>
 		<ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">28.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
 
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
 		<AndroidManifestMerger>manifestmerger.jar</AndroidManifestMerger>
+		<Platforms>AnyCPU</Platforms>
+		<NoWarn>NU1605</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -25,20 +27,20 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="Resources\AppIcon\appicon.svg" />
-	  <None Remove="Resources\AppIcon\appiconfg.svg" />
+		<None Remove="Resources\AppIcon\appicon.svg" />
+		<None Remove="Resources\AppIcon\appiconfg.svg" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiFont Include="Resources\AppIcon\appiconfg.svg" />
+		<MauiFont Include="Resources\AppIcon\appiconfg.svg" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiIcon Include="Resources\AppIcon\appicon.svg" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiImage Include="Resources\Images\scan_icon.svg" />
+		<MauiImage Include="Resources\Images\scan_icon.svg" />
 	</ItemGroup>
 	<ItemGroup>
 		<MauiImage Include="Resources\Images\settings_icon.svg" />
@@ -48,46 +50,46 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- MAUI -->
-		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+		<!-- MAUI para .NET 9 -->
+		<PackageReference Include="Microsoft.Maui.Controls" Version="9.0.82" />
+		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.82" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
 
 		<!-- Biometría -->
-		<PackageReference Include="Plugin.Maui.Biometric" Version="0.1.0" />
+		<PackageReference Include="Plugin.Maui.Biometric" Version="0.0.9" />
 
-		<!-- Escáner QR -->
+		<!-- Escáner QR (versiones compatibles con .NET 9) -->
 		<PackageReference Include="ZXing.Net.Maui" Version="0.4.0" />
 		<PackageReference Include="ZXing.Net.Maui.Controls" Version="0.4.0" />
 
-		<!-- SQLite para cola offline -->
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+		<!-- SQLite -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
 
-		<!-- HTTP Client -->
+		<!-- HTTP Client (Refit ya está bien) -->
 		<PackageReference Include="Refit" Version="8.0.0" />
 		<PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
 
-		<!-- SignalR CLIENT — necesario para SignalRListenerService -->
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0" />
+		<!-- SignalR Client (actualizar a 9.0.0) -->
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
 
-		<!-- MVVM Toolkit (este sí es correcto, el que da error es el otro) -->
+		<!-- MVVM Toolkit -->
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\ATU.Shared\ATU.Shared.csproj" />
-	</ItemGroup>
+        <ProjectReference Include="..\ATU.Shared\ATU.Shared.csproj" />
+    </ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Views\PendingSyncPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\SettingsPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\SolicitudesPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
+		<MauiXaml Update="Views\PendingSyncPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\SettingsPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Views\SolicitudesPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 	</ItemGroup>
 
 </Project>
