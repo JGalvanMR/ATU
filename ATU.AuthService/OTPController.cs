@@ -320,18 +320,26 @@ public class OTPController : ControllerBase
             return Ok(new { success = false, status = "Red", message = "SQL Server no configurado." });
 
         await using var conn = new SqlConnection(_connStr);
-
         var folio = await conn.QueryFirstOrDefaultAsync<FolioRecord>(@"
-            SELECT prod_clave       AS ProdClave,
-                   recibo_sug       AS ReciboSug,
-                   tarimasug        AS TarimaSug,
-                   otp_status       AS OtpStatus,
-                   otp_expires_at   AS OtpExpiresAt,
-                   otp_generado_por AS OtpGeneradoPor,
-                   otp_intentos     AS OtpIntentos
-            FROM tb_det_folio_adelantado
-            WHERE LTRIM(RTRIM(emb_folio)) = @f",
-            new { f = req.EmbFolio.Trim() });
+                    SELECT prod_clave       AS ProdClave,
+                           recibo_sug       AS ReciboSug,
+                           tarimasug        AS TarimaSug,
+                           otp_status       AS OtpStatus,
+                           otp_expires_at   AS OtpExpiresAt,
+                           otp_generado_por AS OtpGeneradoPor,
+                           otp_intentos     AS OtpIntentos
+                    FROM tb_det_folio_adelantado
+                    WHERE LTRIM(RTRIM(emb_folio)) = @f
+                      AND LTRIM(RTRIM(prod_clave)) = @pc
+                      AND LTRIM(RTRIM(recibo_sug)) = @rs
+                      AND tarimasug = @ts",
+                    new
+                    {
+                        f = req.EmbFolio.Trim(),
+                        pc = req.ClaimedProdClave.Trim(),
+                        rs = req.ClaimedReciboSug.Trim(),
+                        ts = req.ClaimedTarimaSug
+                    });
 
         if (folio == null)
             return Ok(new { success = false, status = "Red", message = "Folio no encontrado.", isAuthorized = false });

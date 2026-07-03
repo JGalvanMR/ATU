@@ -14,16 +14,35 @@
 		<ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
 		<AndroidManifestMerger>manifestmerger.jar</AndroidManifestMerger>
 		<Platforms>AnyCPU</Platforms>
 		<NoWarn>NU1605</NoWarn>
+		<NuGetAudit>False</NuGetAudit>
+		<PlatformTarget>x64</PlatformTarget>
+		<AndroidSigningKeyStore>Keystore\GABIRA.keystore</AndroidSigningKeyStore>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 		<AndroidLinkMode>None</AndroidLinkMode>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
+	  <IsTrimmable>True</IsTrimmable>
+	  <AndroidKeyStore>True</AndroidKeyStore>
+	  <AndroidSigningStorePass>GABIRA</AndroidSigningStorePass>
+	  <AndroidSigningKeyAlias>GABIRA</AndroidSigningKeyAlias>
+	  <AndroidSigningKeyPass>GABIRA</AndroidSigningKeyPass>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+	  <IsTrimmable>True</IsTrimmable>
+	  <AndroidKeyStore>True</AndroidKeyStore>
+	  <AndroidSigningStorePass>GABIRA</AndroidSigningStorePass>
+	  <AndroidSigningKeyAlias>GABIRA</AndroidSigningKeyAlias>
+	  <AndroidSigningKeyPass>GABIRA</AndroidSigningKeyPass>
 	</PropertyGroup>
 
 	<ItemGroup>

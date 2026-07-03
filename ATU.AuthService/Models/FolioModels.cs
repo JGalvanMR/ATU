@@ -52,4 +52,7 @@ public class ValidateOtpFolioRequest
     public string ActualProdClave { get; set; } = string.Empty;
     public string ActualRecibo { get; set; } = string.Empty;
     public int ActualTarima { get; set; }
+    public string ClaimedProdClave { get; set; } = string.Empty;
+    public string ClaimedReciboSug { get; set; } = string.Empty;
+    public int ClaimedTarimaSug { get; set; }
 }

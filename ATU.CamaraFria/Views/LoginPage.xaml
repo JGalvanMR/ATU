@@ -5,20 +5,20 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:viewmodel="clr-namespace:ATU.CamaraFria.ViewModels"
-    Padding="{OnPlatform iOS='0,48,0,0',
-                         Default='0,24,0,0'}"
+    Padding="{OnPlatform iOS='0,24,0,0',
+                         Default='0,12,0,0'}"
     ios:Page.UseSafeArea="True"
     x:DataType="viewmodel:LoginViewModel"
     BackgroundColor="#070B18">
 
     <ScrollView>
-        <VerticalStackLayout Padding="24,16" Spacing="28">
+        <VerticalStackLayout Padding="24,16" Spacing="24">
 
             <!--  LOGO / HEADER  -->
-            <VerticalStackLayout HorizontalOptions="Center" Spacing="10">
+            <VerticalStackLayout HorizontalOptions="Center" Spacing="5">
 
                 <Border
-                    Padding="22"
+                    Padding="11"
                     BackgroundColor="#0F1724"
                     Stroke="#1E3A5F"
                     StrokeShape="RoundRectangle 44"

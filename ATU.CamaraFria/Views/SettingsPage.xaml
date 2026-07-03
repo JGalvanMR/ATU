@@ -6,12 +6,12 @@
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     Title="Configuración"
     Padding="{OnPlatform iOS='0,48,0,0',
-                         Default='0,12,0,12'}"
+                         Default='0,12,0,0'}"
     ios:Page.UseSafeArea="True"
     BackgroundColor="#070B18">
 
     <ScrollView>
-        <VerticalStackLayout Padding="18" Spacing="22">
+        <VerticalStackLayout Padding="10" Spacing="11">
 
             <!--  SESIÓN  -->
             <Label
@@ -28,11 +28,12 @@
 
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                     <Label
+                        Grid.Column="0"
                         FontSize="26"
                         Text="👤"
                         VerticalOptions="Center" />
 
-                    <VerticalStackLayout Spacing="4">
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
                         <Label
                             x:Name="LblNombre"
                             FontAttributes="Bold"
@@ -50,12 +51,14 @@
             <Label
                 FontAttributes="Bold"
                 FontSize="13"
+                IsVisible="False"
                 Text="SERVIDOR ATU"
                 TextColor="#8CA0C0" />
 
             <Border
                 Padding="18"
                 BackgroundColor="#0F1724"
+                IsVisible="False"
                 StrokeShape="RoundRectangle 18"
                 StrokeThickness="0">
 
@@ -86,7 +89,7 @@
                     </Border>
 
                     <!--  BOTONES  -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
 
                         <Button
                             Grid.Column="0"
@@ -147,8 +150,9 @@
                 <VerticalStackLayout Spacing="12">
 
                     <!--  FILAS tipo iOS  -->
-                    <Grid ColumnDefinitions="Auto,*">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Label
+                            Grid.Column="0"
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Modelo"
@@ -163,8 +167,9 @@
 
                     <BoxView HeightRequest="1" Color="#1E3A5F" />
 
-                    <Grid ColumnDefinitions="Auto,*">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Label
+                            Grid.Column="0"
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Android"
@@ -179,8 +184,9 @@
 
                     <BoxView HeightRequest="1" Color="#1E3A5F" />
 
-                    <Grid ColumnDefinitions="Auto,*">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Label
+                            Grid.Column="0"
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Device ID"
