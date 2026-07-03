@@ -1,19 +1,38 @@
-using System.Security.Cryptography;
-using System.Text;
+using ATU.AuditService;
 using ATU.AuthService;
 using ATU.Shared;
+using ATU.Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Controllers ──────────────────────────────────────────────────────────────
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IDeviceRepository, InMemoryDeviceRepository>();
-builder.Services.AddSingleton<IOtpRepository, InMemoryOtpRepository>();
-builder.Services.AddSingleton<IEncryptionService, EphemeralEncryptionService>();
-builder.Services.AddSingleton<DeviceEnrollmentService>();
-builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
+// ── SignalR ───────────────────────────────────────────────────────────────────
+// AuditHub vive en ATU.AuditService pero lo reutilizamos aquí para IHubContext
+builder.Services.AddSignalR();
 
+// ── CORS ──────────────────────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
+
+// ── Servicios ATU ─────────────────────────────────────────────────────────────
+builder.Services.AddSingleton<IZoneRepository, ZoneRepository>();
+builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
+builder.Services.AddSingleton<IOtpRepository, InMemoryOtpRepository>();
+builder.Services.AddSingleton<IDeviceRepository, InMemoryDeviceRepository>();
+builder.Services.AddSingleton<IAuditEventPublisher, InMemoryAuditPublisher>();
+builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
+
+// SQL Server para dispositivos (persiste entre reinicios)
+builder.Services.AddSingleton<IDeviceRepository, SqlDeviceRepository>();
+
+// ── App ───────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -22,74 +41,23 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-app.MapOtpEndpoints();
+app.UseCors("AllowAll");
+app.UseAuthorization();
+
+// Mapear AuditHub para que IHubContext<AuditHub> funcione en OTPController
+app.MapHub<AuditHub>("/audit-hub");
+app.MapControllers();
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
+
 app.Run();
 
-internal sealed class InMemoryDeviceRepository : IDeviceRepository
+// ── Implementaciones internas ─────────────────────────────────────────────────
+
+public class InMemoryAuditPublisher : IAuditEventPublisher
 {
-    private readonly List<EnrolledDevice> _devices = [];
-
-    public Task<EnrolledDevice?> GetActiveByOperatorAsync(string operatorId)
-        => Task.FromResult(_devices.LastOrDefault(d => d.OperatorId == operatorId && d.IsActive));
-
-    public Task AddAsync(EnrolledDevice device)
+    public Task PublishAsync(AuditEvent evt)
     {
-        _devices.Add(device);
+        Console.WriteLine($"[AUDIT] {evt.Type}: {evt.BatchId} — {evt.Message}");
         return Task.CompletedTask;
-    }
-
-    public Task UpdateAsync(EnrolledDevice device) => Task.CompletedTask;
-}
-
-internal sealed class InMemoryOtpRepository : IOtpRepository
-{
-    private readonly List<OtpRecord> _records = [];
-
-    public Task Save(OtpRecord record)
-    {
-        _records.Add(record);
-        return Task.CompletedTask;
-    }
-
-    public Task<OtpRecord?> GetLatest(string batchId, string supervisorId)
-        => Task.FromResult(_records.LastOrDefault(r => r.BatchId == batchId && r.SupervisorId == supervisorId));
-
-    public Task Update(OtpRecord record) => Task.CompletedTask;
-}
-
-internal sealed class EphemeralEncryptionService : IEncryptionService
-{
-    private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
-
-    public string Encrypt(string plaintext)
-    {
-        using var aes = Aes.Create();
-        aes.Key = _key;
-        aes.GenerateIV();
-
-        using var encryptor = aes.CreateEncryptor();
-        var clearBytes = Encoding.UTF8.GetBytes(plaintext);
-        var cipherBytes = encryptor.TransformFinalBlock(clearBytes, 0, clearBytes.Length);
-
-        var output = new byte[aes.IV.Length + cipherBytes.Length];
-        Buffer.BlockCopy(aes.IV, 0, output, 0, aes.IV.Length);
-        Buffer.BlockCopy(cipherBytes, 0, output, aes.IV.Length, cipherBytes.Length);
-        return Convert.ToBase64String(output);
-    }
-
-    public string Decrypt(string ciphertext)
-    {
-        var data = Convert.FromBase64String(ciphertext);
-        using var aes = Aes.Create();
-        aes.Key = _key;
-
-        var iv = data[..16];
-        var cipher = data[16..];
-        aes.IV = iv;
-
-        using var decryptor = aes.CreateDecryptor();
-        var clearBytes = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
-        return Encoding.UTF8.GetString(clearBytes);
     }
 }

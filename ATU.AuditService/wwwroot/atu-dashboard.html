@@ -3,1218 +3,952 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0A0E1A">
-    <title>ATU · Sistema de Autorización Transaccional Única</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-    <!-- PWA Manifest -->
+    <title>ATU · Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
-
     <style>
         :root {
             --bg: #070B18;
-            --surface: #0D1525;
-            --surface2: #13203A;
-            --border: #1E3050;
-            --accent: #00D4FF;
-            --accent2: #0066FF;
-            --green: #00FF88;
-            --yellow: #FFB800;
-            --red: #FF2D55;
-            --text: #E8F4FF;
-            --text-dim: #5A7FA8;
-            --mono: 'IBM Plex Mono', monospace;
-            --sans: 'Space Grotesk', sans-serif;
+            --s: #0D1525;
+            --s2: #13203A;
+            --b: #1E3050;
+            --a: #00D4FF;
+            --g: #00FF88;
+            --y: #FFB800;
+            --r: #FF2D55;
+            --t: #E8F4FF;
+            --td: #5A7FA8;
+            --m: 'IBM Plex Mono',monospace
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
-            padding: 0;
+            padding: 0
         }
 
         body {
-            font-family: var(--sans);
+            font-family: 'Space Grotesk',sans-serif;
             background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
+            color: var(--t);
+            min-height: 100vh
         }
 
-            /* Grid background */
             body::before {
                 content: '';
                 position: fixed;
                 inset: 0;
-                background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+                background-image: linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);
                 background-size: 40px 40px;
-                pointer-events: none;
-                z-index: 0;
+                pointer-events: none
             }
 
-        /* ── Layout ── */
         .app {
             position: relative;
-            z-index: 1;
+            z-index: 1
         }
 
         header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 32px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(13,21,37,0.9);
+            padding: 14px 28px;
+            border-bottom: 1px solid var(--b);
+            background: rgba(13,21,37,.95);
             backdrop-filter: blur(20px);
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 100
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 12px
         }
 
         .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg,var(--a),#0066FF);
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
+            display: grid;
+            place-items: center;
+            font-size: 17px
         }
 
         .logo-text {
-            font-family: var(--mono);
+            font-family: var(--m);
             font-weight: 700;
-            font-size: 14px;
-            color: var(--accent);
-            letter-spacing: 2px;
+            font-size: 13px;
+            color: var(--a);
+            letter-spacing: 2px
         }
 
         .logo-sub {
             font-size: 10px;
-            color: var(--text-dim);
+            color: var(--td);
             letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-top: 1px;
+            text-transform: uppercase
         }
 
-        .header-right {
+        .hdr-r {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 16px
         }
 
-        .connection-status {
+        .conn {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-family: var(--mono);
+            font-family: var(--m);
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--td)
         }
 
-        .status-dot {
+        .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--green);
-            animation: pulse-dot 2s infinite;
+            background: var(--g);
+            animation: blink 2s infinite
         }
 
-            .status-dot.disconnected {
-                background: var(--red);
-                animation: none;
+            .dot.off {
+                background: var(--r);
+                animation: none
             }
 
-        @keyframes pulse-dot {
-            0%, 100% {
-                opacity: 1;
-                box-shadow: 0 0 0 0 rgba(0,255,136,0.4);
-            }
-
+        @keyframes blink {
             50% {
-                opacity: 0.8;
-                box-shadow: 0 0 0 4px rgba(0,255,136,0);
+                opacity: .5
             }
         }
 
-        .time-display {
-            font-family: var(--mono);
+        .clk {
+            font-family: var(--m);
             font-size: 13px;
-            color: var(--accent);
-            letter-spacing: 1px;
+            color: var(--a);
+            letter-spacing: 1px
         }
 
-        /* ── Main Grid ── */
-        .main-grid {
+        /* Grid principal */
+        .grid {
             display: grid;
-            grid-template-columns: 380px 1fr;
+            grid-template-columns: 360px 1fr;
             grid-template-rows: auto 1fr;
-            height: calc(100vh - 65px);
+            height: calc(100vh - 65px)
         }
 
-        /* ── Stats Bar ── */
-        .stats-bar {
-            grid-column: 1 / -1;
+        /* Stats */
+        .stats {
+            grid-column: 1/-1;
             display: flex;
             gap: 1px;
-            background: var(--border);
-            border-bottom: 1px solid var(--border);
+            background: var(--b);
+            border-bottom: 1px solid var(--b)
         }
 
-        .stat-card {
+        .stat {
             flex: 1;
-            padding: 16px 24px;
-            background: var(--surface);
+            padding: 14px 20px;
+            background: var(--s);
             display: flex;
             align-items: center;
-            gap: 16px;
-            transition: background 0.2s;
+            gap: 14px
         }
 
-            .stat-card:hover {
-                background: var(--surface2);
-            }
-
-        .stat-icon {
-            font-size: 24px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .si {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
             border-radius: 10px;
+            font-size: 20px
         }
 
-            .stat-icon.green {
-                background: rgba(0,255,136,0.1);
+            .si.g {
+                background: rgba(0,255,136,.1)
             }
 
-            .stat-icon.yellow {
-                background: rgba(255,184,0,0.1);
+            .si.y {
+                background: rgba(255,184,0,.1)
             }
 
-            .stat-icon.red {
-                background: rgba(255,45,85,0.1);
+            .si.r {
+                background: rgba(255,45,85,.1)
             }
 
-            .stat-icon.blue {
-                background: rgba(0,212,255,0.1);
+            .si.b {
+                background: rgba(0,212,255,.1)
             }
 
-        .stat-info {
-            flex: 1;
-        }
-
-        .stat-value {
-            font-family: var(--mono);
+        .sv {
+            font-family: var(--m);
             font-size: 28px;
             font-weight: 700;
-            line-height: 1;
+            line-height: 1
         }
 
-            .stat-value.green {
-                color: var(--green);
+            .sv.g {
+                color: var(--g)
             }
 
-            .stat-value.yellow {
-                color: var(--yellow);
+            .sv.y {
+                color: var(--y)
             }
 
-            .stat-value.red {
-                color: var(--red);
+            .sv.r {
+                color: var(--r)
             }
 
-            .stat-value.blue {
-                color: var(--accent);
+            .sv.b {
+                color: var(--a)
             }
 
-        .stat-label {
+        .sl {
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--td);
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin-top: 4px;
+            margin-top: 4px
         }
 
-        /* ── Panel Izquierdo: Semáforo ── */
-        .semaphore-panel {
-            background: var(--surface);
-            border-right: 1px solid var(--border);
+        /* Panel izquierdo - semáforo */
+        .sem {
+            background: var(--s);
+            border-right: 1px solid var(--b);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: hidden
         }
 
-        .panel-header {
-            padding: 20px 24px 16px;
-            border-bottom: 1px solid var(--border);
+        .ph {
+            padding: 18px 22px 14px;
+            border-bottom: 1px solid var(--b);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: space-between
         }
 
-        .panel-title {
+        .pt {
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: var(--text-dim);
+            color: var(--td)
         }
 
-        /* ── Semáforo Principal ── */
-        .semaphore-container {
+        .sc {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 32px;
-            gap: 24px;
+            padding: 28px;
+            gap: 20px
         }
 
-        .traffic-light {
-            width: 120px;
+        .tl {
+            width: 112px;
             background: #0A1525;
-            border: 2px solid var(--border);
-            border-radius: 20px;
-            padding: 20px 16px;
+            border: 2px solid var(--b);
+            border-radius: 18px;
+            padding: 18px 14px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            align-items: center;
-            box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            gap: 14px;
+            align-items: center
         }
 
         .light {
-            width: 70px;
-            height: 70px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.05);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
+            border: 2px solid rgba(255,255,255,.05);
+            transition: all .4s;
+            position: relative
         }
 
-            .light.active-red {
-                background: var(--red);
-                box-shadow: 0 0 30px var(--red), 0 0 60px rgba(255,45,85,0.4);
-                border-color: rgba(255,45,85,0.5);
+            .light.ar {
+                background: var(--r);
+                box-shadow: 0 0 28px var(--r)
             }
 
-            .light.active-yellow {
-                background: var(--yellow);
-                box-shadow: 0 0 30px var(--yellow), 0 0 60px rgba(255,184,0,0.4);
-                border-color: rgba(255,184,0,0.5);
+            .light.ay {
+                background: var(--y);
+                box-shadow: 0 0 28px var(--y)
             }
 
-            .light.active-green {
-                background: var(--green);
-                box-shadow: 0 0 30px var(--green), 0 0 60px rgba(0,255,136,0.4);
-                border-color: rgba(0,255,136,0.5);
+            .light.ag {
+                background: var(--g);
+                box-shadow: 0 0 28px var(--g)
             }
 
-            .light:not(.active-red):not(.active-yellow):not(.active-green) {
-                background: rgba(255,255,255,0.05);
-                box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            .light:not(.ar):not(.ay):not(.ag) {
+                background: rgba(255,255,255,.05)
             }
 
-            /* Pulso de animación para semáforo activo */
-            .light.active-green::after,
-            .light.active-yellow::after,
-            .light.active-red::after {
+            .light.ag::after, .light.ay::after, .light.ar::after {
                 content: '';
                 position: absolute;
                 inset: -8px;
                 border-radius: 50%;
-                animation: ring-pulse 1.5s ease-out infinite;
+                animation: rp 1.5s ease-out infinite
             }
 
-            .light.active-green::after {
-                border: 2px solid var(--green);
+            .light.ag::after {
+                border: 2px solid var(--g)
             }
 
-            .light.active-yellow::after {
-                border: 2px solid var(--yellow);
+            .light.ay::after {
+                border: 2px solid var(--y)
             }
 
-            .light.active-red::after {
-                border: 2px solid var(--red);
+            .light.ar::after {
+                border: 2px solid var(--r)
             }
 
-        @keyframes ring-pulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-
-            100% {
+        @keyframes rp {
+            to {
                 transform: scale(1.6);
-                opacity: 0;
+                opacity: 0
             }
         }
 
-        .semaphore-status {
-            text-align: center;
+        .ss {
+            text-align: center
         }
 
-        .status-text {
-            font-size: 18px;
+        .st {
+            font-size: 17px;
             font-weight: 700;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            margin-bottom: 5px
         }
 
-            .status-text.green {
-                color: var(--green);
+            .st.g {
+                color: var(--g)
             }
 
-            .status-text.yellow {
-                color: var(--yellow);
+            .st.y {
+                color: var(--y)
             }
 
-            .status-text.red {
-                color: var(--red);
+            .st.r {
+                color: var(--r)
             }
 
-            .status-text.idle {
-                color: var(--text-dim);
+            .st.i {
+                color: var(--td)
             }
 
-        .status-detail {
-            font-size: 12px;
-            color: var(--text-dim);
-            font-family: var(--mono);
-            line-height: 1.5;
-            max-width: 280px;
-        }
-
-        /* ── Info del lote activo ── */
-        .batch-card {
-            width: 100%;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        .batch-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            font-size: 12px;
-        }
-
-            .batch-row:last-child {
-                border-bottom: none;
-            }
-
-        .batch-key {
-            color: var(--text-dim);
-            font-family: var(--mono);
-        }
-
-        .batch-val {
-            color: var(--text);
-            font-weight: 600;
-            font-family: var(--mono);
-        }
-
-            .batch-val.accent {
-                color: var(--accent);
-            }
-
-        /* Timer bar */
-        .timer-container {
-            width: 100%;
-        }
-
-        .timer-label {
-            display: flex;
-            justify-content: space-between;
-            font-family: var(--mono);
+        .sd {
             font-size: 11px;
-            color: var(--text-dim);
-            margin-bottom: 6px;
+            color: var(--td);
+            font-family: var(--m);
+            line-height: 1.5;
+            max-width: 270px;
+            text-align: center
         }
 
-        .timer-bar {
-            height: 4px;
-            background: var(--surface2);
-            border-radius: 2px;
-            overflow: hidden;
+        .bc {
+            width: 100%;
+            background: var(--s2);
+            border: 1px solid var(--b);
+            border-radius: 11px;
+            padding: 14px
         }
 
-        .timer-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent2), var(--accent));
-            border-radius: 2px;
-            transition: width 1s linear;
+        .br {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+            font-size: 12px
         }
 
-        /* ── Panel Derecho: Audit Feed ── */
-        .audit-panel {
+            .br:last-child {
+                border-bottom: none
+            }
+
+        .bk {
+            color: var(--td);
+            font-family: var(--m)
+        }
+
+        .bv {
+            color: var(--t);
+            font-weight: 600;
+            font-family: var(--m)
+        }
+
+        .ac {
+            color: var(--a)
+        }
+
+        /* Panel derecho - feed */
+        .ap {
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: hidden
         }
 
-        .audit-feed {
+        .af {
             flex: 1;
             overflow-y: auto;
-            padding: 0;
+            padding: 0
         }
 
-            .audit-feed::-webkit-scrollbar {
-                width: 4px;
+            .af::-webkit-scrollbar {
+                width: 4px
             }
 
-            .audit-feed::-webkit-scrollbar-track {
-                background: transparent;
+            .af::-webkit-scrollbar-thumb {
+                background: var(--b);
+                border-radius: 2px
             }
 
-            .audit-feed::-webkit-scrollbar-thumb {
-                background: var(--border);
-                border-radius: 2px;
-            }
-
-        /* ── Evento de auditoría ── */
-        .audit-event {
-            display: grid;
-            grid-template-columns: 4px 64px 1fr auto;
+        .filters {
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--b);
+            display: flex;
+            gap: 8px;
             align-items: center;
-            gap: 16px;
-            padding: 16px 24px;
-            border-bottom: 1px solid rgba(30,48,80,0.5);
+            background: var(--s)
+        }
+
+        .fb {
+            padding: 4px 11px;
+            border-radius: 6px;
+            border: 1px solid var(--b);
+            background: transparent;
+            color: var(--td);
+            font-size: 11px;
+            font-family: var(--m);
             cursor: pointer;
-            transition: background 0.15s;
-            animation: slide-in 0.3s ease-out;
+            transition: all .15s
+        }
+
+            .fb.on {
+                background: rgba(0,212,255,.1);
+                border-color: var(--a);
+                color: var(--a)
+            }
+
+            .fb.rf.on {
+                background: rgba(255,45,85,.1);
+                border-color: var(--r);
+                color: var(--r)
+            }
+
+        .fsp {
+            flex: 1
+        }
+
+        .liv {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--m);
+            font-size: 11px;
+            color: var(--g)
+        }
+
+        .ld {
+            width: 6px;
+            height: 6px;
+            background: var(--g);
+            border-radius: 50%;
+            animation: blink 1s infinite
+        }
+
+        .ae {
+            display: grid;
+            grid-template-columns: 4px 60px 1fr auto;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 22px;
+            border-bottom: 1px solid rgba(30,48,80,.5);
             position: relative;
+            animation: si .25s ease-out
         }
 
-            .audit-event:hover {
-                background: rgba(255,255,255,0.02);
+            .ae:hover {
+                background: rgba(255,255,255,.02)
             }
 
-        @keyframes slide-in {
+        @keyframes si {
             from {
-                transform: translateX(-8px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
+                transform: translateX(-6px);
+                opacity: 0
             }
         }
 
-        .event-stripe {
+        .estr {
             width: 4px;
             height: 100%;
             position: absolute;
             left: 0;
             top: 0;
-            border-radius: 0 2px 2px 0;
+            border-radius: 0 2px 2px 0
         }
 
-            .event-stripe.green {
-                background: var(--green);
+            .estr.green {
+                background: var(--g)
             }
 
-            .event-stripe.yellow {
-                background: var(--yellow);
+            .estr.yellow {
+                background: var(--y)
             }
 
-            .event-stripe.red {
-                background: var(--red);
+            .estr.red {
+                background: var(--r)
             }
 
-            .event-stripe.blue {
-                background: var(--accent);
+            .estr.blue {
+                background: var(--a)
             }
 
-        .event-time {
-            font-family: var(--mono);
+        .et {
+            font-family: var(--m);
             font-size: 11px;
-            color: var(--text-dim);
-            white-space: nowrap;
+            color: var(--td);
+            white-space: nowrap
         }
 
-        .event-body {
-            min-width: 0;
+        .eb {
+            min-width: 0
         }
 
-        .event-title {
+        .etit {
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: ellipsis
         }
 
-        .event-meta {
-            font-family: var(--mono);
+        .emeta {
+            font-family: var(--m);
             font-size: 11px;
-            color: var(--text-dim);
+            color: var(--td)
         }
 
-            .event-meta span {
-                margin-right: 12px;
+            .emeta span {
+                margin-right: 10px
             }
 
-            .event-meta .batch {
-                color: var(--accent);
-            }
+        .bat {
+            color: var(--a)
+        }
 
-            .event-meta .supervisor {
-                color: #A78BFA;
-            }
+        .sup {
+            color: #A78BFA
+        }
 
-        .event-badge {
-            padding: 3px 8px;
+        .ebadge {
+            padding: 3px 7px;
             border-radius: 4px;
-            font-family: var(--mono);
+            font-family: var(--m);
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 1px;
-            white-space: nowrap;
+            white-space: nowrap
         }
 
-            .event-badge.green {
-                background: rgba(0,255,136,0.15);
-                color: var(--green);
+            .ebadge.green {
+                background: rgba(0,255,136,.15);
+                color: var(--g)
             }
 
-            .event-badge.yellow {
-                background: rgba(255,184,0,0.15);
-                color: var(--yellow);
+            .ebadge.yellow {
+                background: rgba(255,184,0,.15);
+                color: var(--y)
             }
 
-            .event-badge.red {
-                background: rgba(255,45,85,0.15);
-                color: var(--red);
+            .ebadge.red {
+                background: rgba(255,45,85,.15);
+                color: var(--r)
             }
 
-            .event-badge.blue {
-                background: rgba(0,212,255,0.15);
-                color: var(--accent);
+            .ebadge.blue {
+                background: rgba(0,212,255,.15);
+                color: var(--a)
             }
 
-        /* ── Fraud Alert Modal ── */
-        .fraud-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fade-in 0.2s ease;
-            display: none;
-        }
-
-            .fraud-overlay.visible {
-                display: flex;
-            }
-
-        @keyframes fade-in {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        .fraud-modal {
-            background: var(--surface);
-            border: 2px solid var(--red);
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 480px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 0 60px rgba(255,45,85,0.3);
-            animation: modal-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        @keyframes modal-pop {
-            from {
-                transform: scale(0.85);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        .fraud-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-            animation: shake 0.5s ease;
-        }
-
-        @keyframes shake {
-            0%, 100% {
-                transform: translateX(0);
-            }
-
-            20% {
-                transform: translateX(-8px);
-            }
-
-            40% {
-                transform: translateX(8px);
-            }
-
-            60% {
-                transform: translateX(-8px);
-            }
-
-            80% {
-                transform: translateX(8px);
-            }
-        }
-
-        .fraud-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--red);
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
-
-        .fraud-desc {
-            color: var(--text-dim);
-            margin-bottom: 24px;
-            line-height: 1.6;
-        }
-
-        .fraud-detail {
-            background: rgba(255,45,85,0.08);
-            border: 1px solid rgba(255,45,85,0.3);
-            border-radius: 10px;
-            padding: 16px;
-            font-family: var(--mono);
-            font-size: 12px;
-            text-align: left;
-            margin-bottom: 24px;
-        }
-
-        .fraud-detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            color: var(--text-dim);
-        }
-
-            .fraud-detail-row span:last-child {
-                color: var(--red);
-                font-weight: 700;
-            }
-
-        .btn-dismiss {
-            background: var(--red);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 32px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: var(--sans);
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-
-            .btn-dismiss:hover {
-                background: #FF4D6A;
-                transform: translateY(-1px);
-            }
-
-        /* ── Filters ── */
-        .audit-filters {
-            padding: 12px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            background: var(--surface);
-        }
-
-        .filter-btn {
-            padding: 5px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-dim);
-            font-size: 11px;
-            font-family: var(--mono);
-            cursor: pointer;
-            letter-spacing: 1px;
-            transition: all 0.15s;
-        }
-
-            .filter-btn:hover {
-                border-color: var(--accent);
-                color: var(--accent);
-            }
-
-            .filter-btn.active {
-                background: rgba(0,212,255,0.1);
-                border-color: var(--accent);
-                color: var(--accent);
-            }
-
-            .filter-btn.red {
-            }
-
-                .filter-btn.red.active {
-                    background: rgba(255,45,85,0.1);
-                    border-color: var(--red);
-                    color: var(--red);
-                }
-
-        .filter-spacer {
-            flex: 1;
-        }
-
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--green);
-        }
-
-        .live-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--green);
-            border-radius: 50%;
-            animation: pulse-dot 1s infinite;
-        }
-
-        /* ── Empty state ── */
-        .empty-state {
+        .emp2 {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
-            gap: 12px;
-            color: var(--text-dim);
+            gap: 11px;
+            color: var(--td);
             font-size: 13px;
+            padding: 40px
         }
 
-        .empty-icon {
-            font-size: 40px;
-            opacity: 0.3;
+        /* Fraud modal */
+        .fo {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.85);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center
         }
 
-        /* ── Responsive ── */
-        @media (max-width: 768px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto 1fr;
+            .fo.vis {
+                display: flex
             }
 
-            .semaphore-panel {
-                border-right: none;
-                border-bottom: 1px solid var(--border);
+        .fm {
+            background: var(--s);
+            border: 2px solid var(--r);
+            border-radius: 16px;
+            padding: 36px;
+            max-width: 460px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255,45,85,.25)
+        }
+
+        .fi {
+            font-size: 60px;
+            margin-bottom: 14px
+        }
+
+        .ft {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--r);
+            margin-bottom: 7px
+        }
+
+        .fd {
+            color: var(--td);
+            margin-bottom: 20px;
+            line-height: 1.6
+        }
+
+        .fdet {
+            background: rgba(255,45,85,.08);
+            border: 1px solid rgba(255,45,85,.3);
+            border-radius: 10px;
+            padding: 14px;
+            font-family: var(--m);
+            font-size: 12px;
+            text-align: left;
+            margin-bottom: 20px
+        }
+
+        .fdr {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            color: var(--td)
+        }
+
+            .fdr span:last-child {
+                color: var(--r);
+                font-weight: 700
             }
 
-            .stats-bar {
-                flex-wrap: wrap;
-            }
+        .bd {
+            background: var(--r);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 11px 28px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Space Grotesk',sans-serif
+        }
+
+        /* Timer */
+        .tc {
+            width: 100%
+        }
+
+        .tl2 {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--m);
+            font-size: 11px;
+            color: var(--td);
+            margin-bottom: 5px
+        }
+
+        .tb {
+            height: 4px;
+            background: var(--s2);
+            border-radius: 2px;
+            overflow: hidden
+        }
+
+        .tf {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s linear
         }
     </style>
 </head>
 <body>
     <div class="app">
-
-        <!-- Header -->
         <header>
             <div class="logo">
                 <div class="logo-icon">🔐</div>
                 <div>
-                    <div class="logo-text">ATU · SISTEMA</div>
+                    <div class="logo-text">ATU · MONITOR</div>
                     <div class="logo-sub">Autorización Transaccional Única</div>
                 </div>
             </div>
-            <div class="header-right">
-                <div class="connection-status">
-                    <div class="status-dot" id="conn-dot"></div>
-                    <span id="conn-text">CONECTADO</span>
-                </div>
-                <div class="time-display" id="clock">--:--:--</div>
+            <div class="hdr-r">
+                <div class="conn"><div class="dot off" id="cdot"></div><span id="ctxt">CONECTANDO...</span></div>
+                <div class="clk" id="clk">--:--:--</div>
             </div>
         </header>
-
-        <div class="main-grid">
-
-            <!-- Stats Bar -->
-            <div class="stats-bar">
-                <div class="stat-card">
-                    <div class="stat-icon green">✅</div>
-                    <div class="stat-info">
-                        <div class="stat-value green" id="stat-authorized">0</div>
-                        <div class="stat-label">Autorizadas Hoy</div>
+        <div class="grid">
+            <!-- Stats -->
+            <div class="stats">
+                <div class="stat"><div class="si g">✅</div><div><div class="sv g" id="sa">0</div><div class="sl">Autorizadas hoy</div></div></div>
+                <div class="stat"><div class="si b">🔔</div><div><div class="sv b" id="sp">0</div><div class="sl">Pendientes</div></div></div>
+                <div class="stat"><div class="si y">⏱</div><div><div class="sv y" id="se">0</div><div class="sl">Expiradas</div></div></div>
+                <div class="stat"><div class="si r">🚨</div><div><div class="sv r" id="sf">0</div><div class="sl">Fraudes</div></div></div>
+            </div>
+            <!-- Semáforo -->
+            <div class="sem">
+                <div class="ph"><div class="pt">Última transacción</div><div style="font-size:11px;color:var(--td);font-family:var(--m)">EN VIVO</div></div>
+                <div class="sc">
+                    <div class="tl">
+                        <div class="light" id="lr"></div>
+                        <div class="light" id="ly"></div>
+                        <div class="light" id="lg"></div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon yellow">⏱</div>
-                    <div class="stat-info">
-                        <div class="stat-value yellow" id="stat-expired">0</div>
-                        <div class="stat-label">Expirados</div>
+                    <div class="ss">
+                        <div class="st i" id="stt">EN ESPERA</div>
+                        <div class="sd" id="sdt">Esperando próxima autorización...</div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon red">🚨</div>
-                    <div class="stat-info">
-                        <div class="stat-value red" id="stat-fraud">0</div>
-                        <div class="stat-label">Alertas de Fraude</div>
+                    <div class="bc" id="bcard" style="display:none">
+                        <div class="br"><span class="bk">LOTE</span><span class="bv ac" id="bl">—</span></div>
+                        <div class="br"><span class="bk">FOLIO</span><span class="bv" id="bop">—</span></div>
+                        <div class="br"><span class="bk">SUPERVISOR</span><span class="bv" id="bs">—</span></div>
+                        <div class="br"><span class="bk">HORA</span><span class="bv" id="bt">—</span></div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon blue">🔑</div>
-                    <div class="stat-info">
-                        <div class="stat-value blue" id="stat-pending">0</div>
-                        <div class="stat-label">OTPs Pendientes</div>
+                    <div class="tc" id="tc" style="display:none">
+                        <div class="tl2"><span>Ventana OTP</span><span id="ts">30s</span></div>
+                        <div class="tb"><div class="tf" id="tf" style="width:100%"></div></div>
                     </div>
                 </div>
             </div>
-
-            <!-- Left: Semaphore Panel -->
-            <div class="semaphore-panel">
-                <div class="panel-header">
-                    <div class="panel-title">Estado Actual</div>
-                    <div style="font-size:11px;color:var(--text-dim);font-family:var(--mono);">ÚLTIMA TRANSACCIÓN</div>
+            <!-- Feed -->
+            <div class="ap">
+                <div class="ph"><div class="pt">Feed en tiempo real</div></div>
+                <div class="filters">
+                    <button class="fb on" onclick="fil('all',this)">TODOS</button>
+                    <button class="fb" onclick="fil('green',this)">AUTORIZADOS</button>
+                    <button class="fb" onclick="fil('blue',this)">PENDIENTES</button>
+                    <button class="fb" onclick="fil('yellow',this)">EXPIRADOS</button>
+                    <button class="fb rf" onclick="fil('red',this)">🚨 FRAUDE</button>
+                    <div class="fsp"></div>
+                    <div class="liv"><div class="ld"></div><span>EN VIVO</span></div>
                 </div>
-
-                <div class="semaphore-container">
-
-                    <!-- Traffic Light -->
-                    <div class="traffic-light">
-                        <div class="light" id="light-red"></div>
-                        <div class="light" id="light-yellow"></div>
-                        <div class="light" id="light-green"></div>
-                    </div>
-
-                    <!-- Status Text -->
-                    <div class="semaphore-status">
-                        <div class="status-text idle" id="status-text">EN ESPERA</div>
-                        <div class="status-detail" id="status-detail">Esperando próxima autorización del sistema...</div>
-                    </div>
-
-                    <!-- Batch Info -->
-                    <div class="batch-card" id="batch-card" style="display:none">
-                        <div class="batch-row">
-                            <span class="batch-key">LOTE</span>
-                            <span class="batch-val accent" id="bc-batch">—</span>
-                        </div>
-                        <div class="batch-row">
-                            <span class="batch-key">SUPERVISOR</span>
-                            <span class="batch-val" id="bc-supervisor">—</span>
-                        </div>
-                        <div class="batch-row">
-                            <span class="batch-key">OPERADOR</span>
-                            <span class="batch-val" id="bc-operator">—</span>
-                        </div>
-                        <div class="batch-row">
-                            <span class="batch-key">TIMESTAMP</span>
-                            <span class="batch-val" id="bc-time" style="font-size:10px">—</span>
-                        </div>
-                    </div>
-
-                    <!-- OTP Timer -->
-                    <div class="timer-container" id="timer-container" style="display:none">
-                        <div class="timer-label">
-                            <span>Ventana de autorización</span>
-                            <span id="timer-seconds">90s</span>
-                        </div>
-                        <div class="timer-bar">
-                            <div class="timer-fill" id="timer-fill" style="width:100%"></div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- Right: Audit Feed -->
-            <div class="audit-panel">
-                <div class="panel-header">
-                    <div class="panel-title">Feed de Auditoría en Tiempo Real</div>
-                </div>
-
-                <div class="audit-filters">
-                    <button class="filter-btn active" onclick="setFilter('all', this)">TODOS</button>
-                    <button class="filter-btn" onclick="setFilter('green', this)">AUTORIZADOS</button>
-                    <button class="filter-btn" onclick="setFilter('yellow', this)">EXPIRADOS</button>
-                    <button class="filter-btn red" onclick="setFilter('red', this)">🚨 FRAUDE</button>
-                    <div class="filter-spacer"></div>
-                    <div class="live-indicator">
-                        <div class="live-dot"></div>
-                        <span>EN VIVO</span>
-                    </div>
-                </div>
-
-                <div class="audit-feed" id="audit-feed">
-                    <div class="empty-state" id="empty-state">
-                        <div class="empty-icon">📊</div>
-                        <div>Esperando eventos de autorización...</div>
-                        <div style="font-size:11px;font-family:var(--mono)">SignalR conectado · Dashboard activo</div>
+                <div class="af" id="af">
+                    <div class="emp2" id="empty">
+                        <div style="font-size:40px;opacity:.3">📊</div>
+                        <div>Sin eventos aún</div>
+                        <div style="font-family:var(--m);font-size:11px">Conectando al servidor ATU...</div>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
-
-    <!-- Fraud Alert Modal -->
-    <div class="fraud-overlay" id="fraud-overlay">
-        <div class="fraud-modal">
-            <div class="fraud-icon">🚨</div>
-            <div class="fraud-title">¡ALERTA DE FRAUDE!</div>
-            <div class="fraud-desc" id="fraud-desc">Se detectó un intento de uso de código vinculado a un lote diferente.</div>
-            <div class="fraud-detail" id="fraud-detail">
-                <div class="fraud-detail-row"><span>Supervisor:</span><span id="fa-supervisor">—</span></div>
-                <div class="fraud-detail-row"><span>Lote reclamado:</span><span id="fa-batch">—</span></div>
-                <div class="fraud-detail-row"><span>Hora:</span><span id="fa-time">—</span></div>
-                <div class="fraud-detail-row"><span>Tipo:</span><span id="fa-type">FRAUDE DE LOTE</span></div>
+    <!-- Fraud modal -->
+    <div class="fo" id="fo">
+        <div class="fm">
+            <div class="fi">🚨</div>
+            <div class="ft">¡FRAUDE DETECTADO!</div>
+            <div class="fd" id="fdesc"></div>
+            <div class="fdet">
+                <div class="fdr"><span>Supervisor:</span><span id="fasup">—</span></div>
+                <div class="fdr"><span>Lote:</span><span id="fabat">—</span></div>
+                <div class="fdr"><span>Hora:</span><span id="fatim">—</span></div>
             </div>
-            <button class="btn-dismiss" onclick="dismissFraud()">CONFIRMAR Y REGISTRAR</button>
+            <button class="bd" onclick="document.getElementById('fo').classList.remove('vis')">CONFIRMAR Y REGISTRAR</button>
         </div>
     </div>
+    <script>
+        // ════════════════════════════════════════════════════════════════════════
+        // CONFIGURACIÓN — cambia ATU_SERVER a la IP real de tu servidor
+        // ════════════════════════════════════════════════════════════════════════
+        const ATU_SERVER = "http://192.168.123.155:5001";
 
-    <script>// ── State ──────────────────────────────────────────────────────────────────────
-const state = {
-  events: [],
-  stats: { authorized: 0, expired: 0, fraud: 0, pending: 0 },
-  currentFilter: 'all',
-  timerInterval: null,
-  timerStart: null
-};
+        const ST = { events: [], stats: { g: 0, b: 0, y: 0, r: 0 }, filter: 'all', ti: null, ts: null };
 
-// ── Clock ─────────────────────────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent =
-    now.toLocaleTimeString('es-MX', { hour12: false });
-}
-setInterval(updateClock, 1000);
-updateClock();
+        // Reloj
+        setInterval(() => document.getElementById('clk').textContent =
+            new Date().toLocaleTimeString('es-MX', { hour12: false }), 1000);
 
-// ── SignalR Connection ─────────────────────────────────────────────────────────
-// En producción: usar @microsoft/signalr desde CDN o npm
-// const connection = new signalR.HubConnectionBuilder()
-//   .withUrl('/hubs/audit', { accessTokenFactory: () => getJwtToken() })
-//   .withAutomaticReconnect()
-//   .build();
-//
-// connection.on('AuditEvent', handleAuditEvent);
-// connection.on('FraudAlert', handleFraudAlert);
-// connection.start().then(() => connection.invoke('JoinAsManager'));
+        // ── SignalR ───────────────────────────────────────────────────────────────────
+        const conn = new signalR.HubConnectionBuilder()
+            .withUrl(`${ATU_SERVER}/audit-hub`)
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+            .configureLogging(signalR.LogLevel.Warning)
+            .build();
 
-// ── Simulación de eventos para demo ──────────────────────────────────────────
-const sampleEvents = [
-  { status: 'blue', title: '🔑 OTP Generado', batchId: 'LOT-2024-A847', supervisorId: 'SUP-Martinez', operatorId: 'OP-Ramirez', message: 'OTP generado. Esperando validación.' },
-  { status: 'green', title: '✅ Salida Autorizada', batchId: 'LOT-2024-A847', supervisorId: 'SUP-Martinez', operatorId: 'OP-Ramirez', message: 'Autorización válida. Despacho aprobado.' },
-  { status: 'blue', title: '🔑 OTP Generado', batchId: 'LOT-2024-B203', supervisorId: 'SUP-Torres', operatorId: 'OP-Gutierrez', message: 'OTP generado. Esperando validación.' },
-  { status: 'yellow', title: '⏱️ Código Expirado', batchId: 'LOT-2024-B203', supervisorId: 'SUP-Torres', operatorId: 'OP-Gutierrez', message: 'Código expirado. Solicite uno nuevo.' },
-  { status: 'blue', title: '🔑 OTP Generado', batchId: 'LOT-2024-C991', supervisorId: 'SUP-Jimenez', operatorId: 'OP-Lopez', message: 'OTP generado. Esperando validación.' },
-  { status: 'red', title: '🚨 INTENTO DE FRAUDE', batchId: 'LOT-2024-C991', supervisorId: 'SUP-Jimenez', operatorId: 'OP-Lopez', message: 'FRAUDE: Código vinculado a LOT-2024-A847 usado en LOT-2024-C991.', isFraud: true },
-  { status: 'green', title: '✅ Salida Autorizada', batchId: 'LOT-2024-D445', supervisorId: 'SUP-Reyes', operatorId: 'OP-Mora', message: 'Autorización válida. Geofence confirmado.' },
-];
+        conn.on("AuditEvent", e => handleEvent(e));
 
-let sampleIndex = 0;
+        // Folios adelantados solicitados desde CargaEmbarques
+        conn.on("NuevoFolioAdelantado", n => handleEvent({
+            status: 'blue',
+            title: '🔔 Folio Adelantado Solicitado',
+            batchId: `${n.prodClave}-${n.reciboSug}-${n.tarimaSug}`,
+            supervisorId: n.responsable,
+            operatorId: n.embFolio,
+            message: `Folio ${n.embFolio} · ${n.producto} · Motivo: ${n.motivo}`,
+            timestamp: new Date().toISOString(),
+            eventId: crypto.randomUUID()
+        }));
 
-function simulateEvent() {
-  const evt = sampleEvents[sampleIndex % sampleEvents.length];
-  sampleIndex++;
-  handleAuditEvent({
-    ...evt,
-    eventId: crypto.randomUUID(),
-    timestamp: new Date().toISOString()
-  });
-}
+        conn.on("FraudAlert", e => showFraud(e));
 
-// ── Event Handlers ────────────────────────────────────────────────────────────
-function handleAuditEvent(evt) {
-  state.events.unshift(evt);
+        conn.onreconnecting(() => { setConn(false, 'RECONECTANDO...'); });
+        conn.onreconnected(() => {
+            setConn(true, 'CONECTADO');
+            conn.invoke("SubscribeToAuditFeed").catch(console.error);
+        });
+        conn.onclose(() => setConn(false, 'DESCONECTADO — recargue la página'));
 
-  // Update stats
-  if (evt.status === 'green') state.stats.authorized++;
-  if (evt.status === 'yellow') state.stats.expired++;
-  if (evt.status === 'red') state.stats.fraud++;
-  if (evt.status === 'blue') state.stats.pending++;
+        async function start() {
+            try {
+                await conn.start();
+                setConn(true, 'CONECTADO');
+                await conn.invoke("SubscribeToAuditFeed");
+                document.querySelector('.emp2').innerHTML =
+                    '<div style="font-size:40px;opacity:.3">📊</div>' +
+                    '<div>Conectado · Esperando eventos...</div>' +
+                    `<div style="font-family:var(--m);font-size:11px">Hub: ${ATU_SERVER}/audit-hub</div>`;
+            } catch (e) {
+                setConn(false, 'ERROR — ' + e.message);
+                setTimeout(start, 5000);
+            }
+        }
+        start();
 
-  updateStats();
-  updateSemaphore(evt);
-  renderFeed();
+        function setConn(ok, txt) {
+            document.getElementById('cdot').className = 'dot' + (ok ? '' : ' off');
+            document.getElementById('ctxt').textContent = txt;
+        }
 
-  if (evt.isFraud) showFraudAlert(evt);
-}
+        // ── Event handlers ────────────────────────────────────────────────────────────
+        function handleEvent(e) {
+            e.timestamp = e.timestamp || new Date().toISOString();
+            ST.events.unshift(e);
+            // Limitar a 500 eventos
+            if (ST.events.length > 500) ST.events.length = 500;
 
-function updateStats() {
-  document.getElementById('stat-authorized').textContent = state.stats.authorized;
-  document.getElementById('stat-expired').textContent = state.stats.expired;
-  document.getElementById('stat-fraud').textContent = state.stats.fraud;
-  document.getElementById('stat-pending').textContent = state.stats.pending;
-}
+            if (e.status === 'green') ST.stats.g++;
+            if (e.status === 'blue') ST.stats.b++;
+            if (e.status === 'yellow') ST.stats.y++;
+            if (e.status === 'red') ST.stats.r++;
 
-// ── Semáforo ──────────────────────────────────────────────────────────────────
-function updateSemaphore(evt) {
-  // Reset luces
-  ['red','yellow','green'].forEach(c => {
-    document.getElementById(`light-${c}`).className = 'light';
-  });
+            updStats(); updSem(e); render();
+            if (e.isFraud) showFraud(e);
+        }
 
-  const colorMap = { green: 'green', yellow: 'yellow', red: 'red', blue: 'yellow' };
-  const color = colorMap[evt.status] || 'yellow';
-  document.getElementById(`light-${color}`).classList.add(`active-${color}`);
+        function updStats() {
+            document.getElementById('sa').textContent = ST.stats.g;
+            document.getElementById('sp').textContent = ST.stats.b;
+            document.getElementById('se').textContent = ST.stats.y;
+            document.getElementById('sf').textContent = ST.stats.r;
+        }
 
-  // Status text
-  const statusEl = document.getElementById('status-text');
-  const detailEl = document.getElementById('status-detail');
-  statusEl.className = `status-text ${evt.status === 'blue' ? 'idle' : evt.status}`;
+        function updSem(e) {
+            ['r', 'y', 'g'].forEach(c => { document.getElementById('l' + c).className = 'light'; });
+            const cm = { green: 'g', yellow: 'y', red: 'r', blue: 'y' };
+            const c = cm[e.status] || 'y';
+            document.getElementById('l' + c).classList.add('a' + c);
 
-  const titles = {
-    green: 'AUTORIZADO ✓',
-    yellow: 'CÓDIGO EXPIRADO',
-    red: '¡ALERTA DE FRAUDE!',
-    blue: 'OTP GENERADO'
-  };
-  statusEl.textContent = titles[evt.status] || 'PROCESANDO';
-  detailEl.textContent = evt.message;
+            const tt = { green: 'AUTORIZADO ✓', yellow: 'CÓDIGO EXPIRADO', red: '¡FRAUDE!', blue: 'SOLICITUD PENDIENTE' };
+            const stt = document.getElementById('stt');
+            stt.className = 'st ' + (e.status === 'blue' ? 'i' : e.status);
+            stt.textContent = tt[e.status] || 'PROCESANDO';
+            document.getElementById('sdt').textContent = e.message;
 
-  // Batch info
-  document.getElementById('batch-card').style.display = 'block';
-  document.getElementById('bc-batch').textContent = evt.batchId;
-  document.getElementById('bc-supervisor').textContent = evt.supervisorId;
-  document.getElementById('bc-operator').textContent = evt.operatorId;
-  document.getElementById('bc-time').textContent = new Date(evt.timestamp).toLocaleTimeString('es-MX');
+            document.getElementById('bcard').style.display = 'block';
+            document.getElementById('bl').textContent = e.batchId;
+            document.getElementById('bop').textContent = e.operatorId;
+            document.getElementById('bs').textContent = e.supervisorId;
+            document.getElementById('bt').textContent = ft(e.timestamp);
 
-  // Timer (solo para OTPs generados)
-  if (evt.status === 'blue') startTimer(90);
-}
+            if (e.status === 'blue') startTimer(30);
+        }
 
-function startTimer(seconds) {
-  clearInterval(state.timerInterval);
-  state.timerStart = Date.now();
-  const total = seconds * 1000;
+        function startTimer(sec) {
+            clearInterval(ST.ti); ST.ts = Date.now(); const tot = sec * 1000;
+            document.getElementById('tc').style.display = 'block';
+            ST.ti = setInterval(() => {
+                const rem = Math.max(0, tot - (Date.now() - ST.ts));
+                const pct = rem / tot * 100;
+                const s = Math.ceil(rem / 1000);
+                document.getElementById('ts').textContent = s + 's';
+                const tf = document.getElementById('tf');
+                tf.style.width = pct + '%';
+                tf.style.background = pct > 50 ? 'linear-gradient(90deg,#0066FF,var(--a))'
+                    : pct > 25 ? 'linear-gradient(90deg,#FF6B00,var(--y))'
+                        : 'linear-gradient(90deg,#8B0000,var(--r))';
+                if (rem <= 0) clearInterval(ST.ti);
+            }, 200);
+        }
 
-  document.getElementById('timer-container').style.display = 'block';
+        function render() {
+            const feed = document.getElementById('af');
+            const list = ST.filter === 'all' ? ST.events : ST.events.filter(e => e.status === ST.filter);
 
-  state.timerInterval = setInterval(() => {
-    const elapsed = Date.now() - state.timerStart;
-    const remaining = Math.max(0, total - elapsed);
-    const pct = (remaining / total) * 100;
-    const secs = Math.ceil(remaining / 1000);
+            if (!list.length) {
+                feed.innerHTML = '<div class="emp2"><div style="font-size:40px;opacity:.3">🔍</div><div>Sin eventos para este filtro</div></div>';
+                return;
+            }
 
-    document.getElementById('timer-fill').style.width = `${pct}%`;
-    document.getElementById('timer-seconds').textContent = `${secs}s`;
+            feed.innerHTML = list.slice(0, 150).map(e => `
+        <div class="ae">
+          <div class="estr ${e.status}"></div>
+          <div class="et">${ft(e.timestamp)}</div>
+          <div class="eb">
+            <div class="etit" style="color:${gc(e.status)}">${e.title}</div>
+            <div class="emeta">
+              <span class="bat">${e.batchId}</span>
+              <span class="sup">${e.supervisorId}</span>
+              <span>${e.operatorId}</span>
+            </div>
+          </div>
+          <div class="ebadge ${e.status}">${gl(e.status)}</div>
+        </div>`).join('');
+        }
 
-    const fill = document.getElementById('timer-fill');
-    fill.style.background = pct > 50
-      ? 'linear-gradient(90deg, var(--accent2), var(--accent))'
-      : pct > 25
-        ? 'linear-gradient(90deg, #FF6B00, var(--yellow))'
-        : 'linear-gradient(90deg, #8B0000, var(--red))';
+        function fil(f, btn) {
+            ST.filter = f;
+            document.querySelectorAll('.fb').forEach(b => b.classList.remove('on'));
+            btn.classList.add('on');
+            render();
+        }
 
-    if (remaining <= 0) {
-      clearInterval(state.timerInterval);
-      document.getElementById('timer-seconds').textContent = '0s';
-    }
-  }, 200);
-}
+        function ft(iso) { return new Date(iso).toLocaleTimeString('es-MX', { hour12: false }); }
+        function gc(s) { return { green: 'var(--g)', yellow: 'var(--y)', red: 'var(--r)', blue: 'var(--a)' }[s] || 'var(--t)'; }
+        function gl(s) { return { green: 'OK', yellow: 'EXPIRADO', red: 'FRAUDE', blue: 'PENDIENTE' }[s] || s; }
 
-// ── Feed de Auditoría ─────────────────────────────────────────────────────────
-function renderFeed() {
-  const feed = document.getElementById('audit-feed');
-  const empty = document.getElementById('empty-state');
-
-  const filtered = state.currentFilter === 'all'
-    ? state.events
-    : state.events.filter(e => e.status === state.currentFilter);
-
-  if (filtered.length === 0) {
-    feed.innerHTML = '';
-    feed.appendChild(empty);
-    return;
-  }
-
-  const html = filtered.slice(0, 100).map(evt => `
-    <div class="audit-event">
-      <div class="event-stripe ${evt.status}"></div>
-      <div class="event-time">${formatTime(evt.timestamp)}</div>
-      <div class="event-body">
-        <div class="event-title" style="color:${getColor(evt.status)}">${evt.title}</div>
-        <div class="event-meta">
-          <span class="batch">${evt.batchId}</span>
-          <span class="supervisor">${evt.supervisorId}</span>
-          <span>${evt.operatorId}</span>
-        </div>
-      </div>
-      <div class="event-badge ${evt.status}">${getStatusLabel(evt.status)}</div>
-    </div>
-  `).join('');
-
-  feed.innerHTML = html;
-}
-
-function setFilter(filter, btn) {
-  state.currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderFeed();
-}
-
-function formatTime(iso) {
-  return new Date(iso).toLocaleTimeString('es-MX', { hour12: false });
-}
-
-function getColor(status) {
-  return { green: 'var(--green)', yellow: 'var(--yellow)', red: 'var(--red)', blue: 'var(--accent)' }[status] || 'var(--text)';
-}
-
-function getStatusLabel(status) {
-  return { green: 'OK', yellow: 'EXPIRADO', red: 'FRAUDE', blue: 'PENDIENTE' }[status] || status;
-}
-
-// ── Fraud Alert ────────────────────────────────────────────────────────────────
-function showFraudAlert(evt) {
-  document.getElementById('fraud-desc').textContent = evt.message;
-  document.getElementById('fa-supervisor').textContent = evt.supervisorId;
-  document.getElementById('fa-batch').textContent = evt.batchId;
-  document.getElementById('fa-time').textContent = new Date(evt.timestamp).toLocaleString('es-MX');
-  document.getElementById('fraud-overlay').classList.add('visible');
-}
-
-function dismissFraud() {
-  document.getElementById('fraud-overlay').classList.remove('visible');
-}
-
-// ── Demo: Auto-simulate events ─────────────────────────────────────────────────
-setTimeout(() => simulateEvent(), 1500);
-setTimeout(() => simulateEvent(), 4000);
-setTimeout(() => simulateEvent(), 6000);
-setTimeout(() => simulateEvent(), 9000);
-setTimeout(() => simulateEvent(), 11500);
-setTimeout(() => simulateEvent(), 14000);
-setInterval(() => simulateEvent(), 8000);</script>
+        function showFraud(e) {
+            document.getElementById('fdesc').textContent = e.message || '';
+            document.getElementById('fasup').textContent = e.supervisorId || '—';
+            document.getElementById('fabat').textContent = e.batchId || '—';
+            document.getElementById('fatim').textContent = new Date(e.timestamp || Date.now()).toLocaleString('es-MX');
+            document.getElementById('fo').classList.add('vis');
+        }
+    </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 ﻿{
   "name": "ATU Dashboard",
   "short_name": "ATU",
-  "start_url": "/index.html",
+  "start_url": "/atu_dashboard.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000"

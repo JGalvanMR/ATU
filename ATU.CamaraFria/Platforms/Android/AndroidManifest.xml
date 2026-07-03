@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- ATU.CamaraFria/Platforms/Android/AndroidManifest.xml -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<!-- Permisos de red -->
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+	<!-- Notificaciones reales (Android 13+) -->
+	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+	<!-- Foreground Service — requerido para mantener SignalR activo en segundo plano -->
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+	<!-- Vibración al recibir notificación -->
+	<uses-permission android:name="android.permission.VIBRATE" />
+
+	<!-- Cámara (para versiones futuras con escaner por cámara) -->
+	<uses-permission android:name="android.permission.CAMERA" />
+	<uses-feature android:name="android.hardware.camera" android:required="false" />
+
+	<!-- Biometría -->
+	<uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+	<!-- Arrancar servicio al reiniciar el dispositivo -->
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+	<application
+        android:allowBackup="true"
+        android:label="ATU Cámara Fría"
+        android:icon="@mipmap/appicon"
+        android:roundIcon="@mipmap/appicon_round"
+        android:supportsRtl="true"
+        android:theme="@style/Maui.SplashTheme"
+        android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="true">
+
+		<!-- Actividad principal -->
+		<activity
+            android:name="com.mrlucky.atu.camarafria.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+            android:windowSoftInputMode="adjustResize" >
+
+		
+		</activity>
+
+		<!-- Foreground Service de notificaciones ATU (on-premise, sin Firebase) -->
+		<service
+            android:name="com.mrlucky.atu.camarafria.Platforms.Android.ATUNotificationService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+
+		<!-- Receptor que reinicia el servicio al arrancar el dispositivo -->
+		<receiver
+            android:name="com.mrlucky.atu.camarafria.Platforms.Android.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+			<intent-filter android:priority="1000">
+				<action android:name="android.intent.action.BOOT_COMPLETED" />
+				<action android:name="android.intent.action.QUICKBOOT_POWERON" />
+			</intent-filter>
+		</receiver>
+
+	</application>
+</manifest>

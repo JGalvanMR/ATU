@@ -1,22 +1,38 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Platforms>AnyCPU;x64</Platforms>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.9.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.25" />
-    <PackageReference Include="Microsoft.AspNetCore.RateLimiting" Version="7.0.0-rc.2.22476.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.25" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-  </ItemGroup>
+	<ItemGroup>
+		<!-- API y Swagger -->
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi"           Version="8.0.25" />
+		<PackageReference Include="Swashbuckle.AspNetCore"                 Version="6.6.2" />
 
-  <ItemGroup>
-    <ProjectReference Include="..\ATU.Shared\ATU.Shared.csproj" />
-  </ItemGroup>
+		<!-- Auth JWT -->
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25" />
+
+		<!-- Rate limiting -->
+		<PackageReference Include="Microsoft.AspNetCore.RateLimiting"      Version="7.0.0-rc.2.22476.2" />
+
+		<!-- SQL Server — para los nuevos endpoints de folio adelantado -->
+		<PackageReference Include="Microsoft.Data.SqlClient"               Version="5.2.2" />
+		<PackageReference Include="Dapper"                                 Version="2.1.35" />
+
+		<!-- SignalR — para IHubContext<AuditHub> en OTPController -->
+		<PackageReference Include="Microsoft.AspNetCore.SignalR"           Version="1.2.9" />
+
+		<!-- Key Vault (opcional, sigue siendo referenciado en la config) -->
+		<PackageReference Include="Azure.Security.KeyVault.Secrets"        Version="4.9.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ATU.Shared\ATU.Shared.csproj" />
+		<!-- AuditHub vive en AuditService, lo usamos para IHubContext -->
+		<ProjectReference Include="..\ATU.AuditService\ATU.AuditService.csproj" />
+	</ItemGroup>
 
 </Project>

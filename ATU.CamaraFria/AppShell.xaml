@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="ATU.CamaraFria.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:ATU.CamaraFria.Views"
+    BackgroundColor="#070B18"
+    FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False">
+
+    <TabBar
+        Shell.TabBarBackgroundColor="#0A0E1A"
+        Shell.TabBarForegroundColor="#00BFFF"
+        Shell.TabBarUnselectedColor="#3A5070">
+
+        <!--
+            ESCANEAR
+            El supervisor de cámaras frías escanea la etiqueta verde.
+            Ruta //Scan usada por MainActivity y SolicitudesPage.
+        -->
+        <ShellContent
+            Title="Escanear"
+            ContentTemplate="{DataTemplate views:OTPDisplayPage}"
+            Icon="scan_icon.svg"
+            Route="Scan" />
+
+        <!--
+            SOLICITUDES
+            Lista de folios adelantados pendientes de autorizar.
+            Antes era "Pendientes" — ahora muestra solicitudes del servidor.
+        -->
+        <ShellContent
+            Title="Solicitudes"
+            ContentTemplate="{DataTemplate views:SolicitudesPage}"
+            Icon="sync_icon.svg"
+            Route="Solicitudes" />
+
+        <!--
+            CONFIG
+            URL del servidor, info de sesión, cerrar sesión.
+        -->
+        <ShellContent
+            Title="Config"
+            ContentTemplate="{DataTemplate views:SettingsPage}"
+            Icon="settings_icon.svg"
+            Route="Settings" />
+
+    </TabBar>
+</Shell>

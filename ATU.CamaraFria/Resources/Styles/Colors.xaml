@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--  Colores base de ATU  -->
+    <Color x:Key="Primary">#00BFFF</Color>
+    <Color x:Key="BackgroundDark">#070B18</Color>
+
+</ResourceDictionary>

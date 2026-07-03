@@ -1,112 +1,485 @@
+using System.Security.Cryptography;
+using System.Text;
+using ATU.AuditService;
+using ATU.AuthService.Models;
 using ATU.Shared;
+using ATU.Shared.Models;
+using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Data.SqlClient;
 
-namespace ATU.AuthService;
+namespace ATU.AuthService.Controllers;
 
-public static class OTPController
+[ApiController]
+[Route("api/otp")]
+public class OTPController : ControllerBase
 {
-    public static IEndpointRouteBuilder MapOtpEndpoints(this IEndpointRouteBuilder app)
+    private readonly IAuditEventPublisher _audit;
+    private readonly IDeviceRepository _devices;
+    private readonly IEncryptionService _encryption;
+    private readonly IOtpRepository _otps;
+    private readonly IHubContext<AuditHub> _auditHub;
+    private readonly string _connStr;
+
+    public OTPController(
+        IAuditEventPublisher audit,
+        IDeviceRepository devices,
+        IEncryptionService encryption,
+        IOtpRepository otps,
+        IHubContext<AuditHub> auditHub,
+        IConfiguration configuration)
     {
-        app.MapPost("/otp/generate", GenerateOtp);
-        app.MapPost("/otp/validate", ValidateOtp);
-        return app;
+        _audit = audit;
+        _devices = devices;
+        _encryption = encryption;
+        _otps = otps;
+        _auditHub = auditHub;
+        _connStr = configuration.GetConnectionString("SqlServer") ?? string.Empty;
     }
 
-    private static async Task<IResult> GenerateOtp(
-        [FromBody] GenerateOtpRequest request,
-        DeviceEnrollmentService enrollmentService,
-        IOtpRepository otpRepository)
-    {
-        var device = await enrollmentService.ValidateDevice(request.OperatorId, request.HardwareId, request.UserAgent, request.Platform);
-        if (!device.IsValid || string.IsNullOrWhiteSpace(device.Secret))
-        {
-            return Results.Unauthorized();
-        }
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENDPOINT EXISTENTE — generate (flujo normal sin folio)
+    // ═══════════════════════════════════════════════════════════════════════
 
-        var otp = ATUCore.GenerateOTP(device.Secret, request.BatchId, request.SupervisorId);
+    public class MobileGenerateRequest
+    {
+        public string SupervisorId { get; set; } = string.Empty;
+        public string BatchId { get; set; } = string.Empty;
+        public string DeviceFingerprint { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+    }
+
+    public class MobileValidateRequest
+    {
+        public string Code { get; set; } = string.Empty;
+        public string BatchId { get; set; } = string.Empty;
+        public string SupervisorId { get; set; } = string.Empty;
+        public string DeviceFingerprint { get; set; } = string.Empty;
+    }
+
+    [HttpPost("generate")]
+    public async Task<IActionResult> Generate([FromBody] MobileGenerateRequest request)
+    {
+        var device = await _devices.GetByIdAsync(request.SupervisorId);
+        if (device == null)
+            return Ok(new { success = false, message = $"Supervisor '{request.SupervisorId}' no enrolado.", data = (object?)null, errors = new[] { "NOT_ENROLLED" } });
+
+        var secret = _encryption.Decrypt(device.EncryptedSecret);
+        var otp = ATUCore.GenerateOTP(secret, request.BatchId, request.SupervisorId);
+        var expires = DateTimeOffset.UtcNow.AddSeconds(ATUCore.TtlSeconds);
+
         var record = new OtpRecord
         {
             Otp = otp,
             BatchId = request.BatchId,
             SupervisorId = request.SupervisorId,
-            OperatorId = request.OperatorId,
-            CreatedAt = DateTimeOffset.UtcNow,
-            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(ATUCore.TtlSeconds)
+            OperatorId = request.SupervisorId,
+            GeneratedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = expires,
+            IsUsed = false
+        };
+        await _otps.SaveAsync(record);
+
+        await EmitirAuditEvent("blue", "🔑 OTP Generado", request.BatchId,
+            request.SupervisorId, request.SupervisorId,
+            $"OTP generado para lote {request.BatchId}");
+
+        return Ok(new
+        {
+            success = true,
+            message = "OTP generado correctamente",
+            data = new
+            {
+                code = otp,
+                generatedAt = DateTime.UtcNow,
+                expiresAt = expires.UtcDateTime,
+                secondsRemaining = ATUCore.TtlSeconds,
+                batchId = request.BatchId,
+                transactionId = Guid.NewGuid().ToString()
+            },
+            errors = new List<string>()
+        });
+    }
+
+    [HttpPost("validate")]
+    public async Task<IActionResult> Validate([FromBody] MobileValidateRequest request)
+    {
+        var stored = await _otps.GetByBatchAndSupervisorAsync(request.BatchId, request.SupervisorId);
+        if (stored == null) return Ok(new { success = false, status = "Red", message = "No hay OTP pendiente.", isAuthorized = false });
+        if (stored.IsUsed) return Ok(new { success = false, status = "Red", message = "OTP ya usado.", isAuthorized = false });
+        if (stored.ExpiresAt < DateTimeOffset.UtcNow) return Ok(new { success = false, status = "Yellow", message = "OTP expirado. Solicite uno nuevo.", isAuthorized = false });
+        if (!ATUCore.CryptographicEquals(stored.Otp, request.Code)) return Ok(new { success = false, status = "Red", message = "Código incorrecto.", isAuthorized = false });
+
+        stored.IsUsed = true; stored.UsedAt = DateTimeOffset.UtcNow;
+        await _otps.UpdateAsync(stored);
+
+        await EmitirAuditEvent("green", "✅ OTP Validado", request.BatchId,
+            request.SupervisorId, request.SupervisorId, $"Autorización válida para {request.BatchId}");
+
+        return Ok(new { success = true, status = "Green", message = "Autorización válida.", isAuthorized = true, supervisorId = stored.SupervisorId });
+    }
+
+    [HttpGet("pending")]
+    public async Task<IActionResult> Pending([FromQuery] string batchId)
+    {
+        var p = await _otps.GetPendingByBatchAsync(batchId);
+        if (p == null) return Ok(new { success = false, message = "Sin OTP pendiente.", supervisorId = (string?)null });
+        return Ok(new { success = true, supervisorId = p.SupervisorId, expiresAt = p.ExpiresAt.DateTime });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // NUEVOS ENDPOINTS — flujo con folio adelantado
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [HttpPost("request")]
+    public async Task<IActionResult> CreateRequest([FromBody] AtuRequestRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(_connStr))
+            return Ok(new { success = false, message = "SQL Server no configurado." });
+
+        await using var conn = new SqlConnection(_connStr);
+
+        // Insertar en tb_det_folio_adelantado con otp_status = PENDING
+        await conn.ExecuteAsync(@"
+            INSERT INTO tb_det_folio_adelantado
+                (responsable, fecha, emb_folio, recibo_cap, fecreccap,
+                 recibo_sug, fecrecsug, prod_clave, producto, cantidad,
+                 tarimacap, tarimasug, imei, motivo, fechareal, otp_status)
+            VALUES
+                (@responsable,
+                 CONVERT(varchar,GETDATE(),103)+' '+CONVERT(varchar,GETDATE(),108),
+                 @embFolio, @reciboCap, @fechaRecCap,
+                 @reciboSug, @fechaRecSug, @prodClave, @producto, @cantidad,
+                 @tarimaCap, @tarimaSug, @imei, @motivo, GETUTCDATE(), 'PENDING')",
+            new
+            {
+                responsable = Truncate(req.Responsable, 25),
+                embFolio = req.EmbFolio,
+                reciboCap = req.ReciboCap,
+                fechaRecCap = req.FechaRecCap,
+                reciboSug = req.ReciboSug,
+                fechaRecSug = req.FechaRecSug,
+                prodClave = req.ProdClave,
+                producto = req.Producto,
+                cantidad = req.Cantidad,
+                tarimaCap = req.TarimaCap,
+                tarimaSug = req.TarimaSug,
+                imei = req.Imei,
+                motivo = req.Motivo
+            });
+
+        // Notificar a la app ATU.CamaraFria y al dashboard
+        var notif = new
+        {
+            embFolio = req.EmbFolio,
+            prodClave = req.ProdClave,
+            producto = req.Producto,
+            reciboSug = req.ReciboSug,
+            tarimaSug = req.TarimaSug,
+            responsable = req.Responsable,
+            motivo = req.Motivo
         };
 
-        await otpRepository.Save(record);
-        return Results.Ok(new GenerateOtpResponse(otp, record.ExpiresAt));
+        await _auditHub.Clients.Group("audit-feed").SendAsync("NuevoFolioAdelantado", notif);
+
+        await EmitirAuditEvent("blue", "🔔 Folio Adelantado Solicitado",
+            $"{req.ProdClave}-{req.ReciboSug}-{req.TarimaSug}",
+            req.Responsable, req.Imei,
+            $"CargaEmbarques solicita autorización. Motivo: {req.Motivo}");
+
+        return Ok(new { success = true, message = "Solicitud registrada. Supervisores notificados." });
     }
 
-    private static async Task<IResult> ValidateOtp(
-        [FromBody] ValidateOtpRequest request,
-        DeviceEnrollmentService enrollmentService,
-        IOtpRepository otpRepository,
-        IGeofenceService geofenceService)
+    [HttpGet("solicitudes-pendientes")]
+    public async Task<IActionResult> GetSolicitudesPendientes()
     {
-        var device = await enrollmentService.ValidateDevice(request.OperatorId, request.HardwareId, request.UserAgent, request.Platform);
-        if (!device.IsValid || string.IsNullOrWhiteSpace(device.Secret))
-        {
-            return Results.Unauthorized();
-        }
+        if (string.IsNullOrWhiteSpace(_connStr))
+            return Ok(new { success = false, data = Array.Empty<object>() });
 
-        var geofence = geofenceService.ValidateProximity(request.OperatorCoordinate, request.SupervisorCoordinate);
-        if (!geofence.IsAllowed)
-        {
-            return Results.BadRequest(new { geofence.Message, geofence.DistanceMeters });
-        }
+        await using var conn = new SqlConnection(_connStr);
 
-        var stored = await otpRepository.GetLatest(request.BatchId, request.SupervisorId);
-        if (stored is not null && stored.IsUsed)
-        {
-            return Results.Ok(new ValidateOtpResponse(false, OtpValidationStatus.ReplayAttack, "OTP ya utilizado."));
-        }
+        var rows = await conn.QueryAsync<dynamic>(@"
+            SELECT TOP 50
+                LTRIM(RTRIM(emb_folio))  AS EmbFolio,
+                LTRIM(RTRIM(prod_clave)) AS ProdClave,
+                LTRIM(RTRIM(producto))   AS Producto,
+                LTRIM(RTRIM(recibo_cap)) AS ReciboCap,
+                CAST(tarimacap AS VARCHAR) AS TarimaCap,
+                LTRIM(RTRIM(responsable)) AS Responsable,
+                LTRIM(RTRIM(motivo))     AS Motivo,
+                fechareal                AS FechaCreacion
+            FROM tb_det_folio_adelantado
+            WHERE otp_status = 'PENDING'
+              AND fechareal >= DATEADD(HOUR, -8, GETUTCDATE())
+            ORDER BY fechareal DESC");
 
-        var result = ATUCore.ValidateOTP(request.Otp, device.Secret, request.ClaimedBatchId, request.BatchId, request.SupervisorId);
-        if (result.IsValid && stored is not null)
-        {
-            stored.IsUsed = true;
-            stored.UsedAt = DateTimeOffset.UtcNow;
-            await otpRepository.Update(stored);
-        }
-
-        return Results.Ok(new ValidateOtpResponse(result.IsValid, result.Status, result.Message));
+        return Ok(new { success = true, data = rows });
     }
-}
 
-public sealed record GenerateOtpRequest(string OperatorId, string SupervisorId, string BatchId, string HardwareId, string UserAgent, string Platform);
-public sealed record GenerateOtpResponse(string Otp, DateTimeOffset ExpiresAt);
+    [HttpPost("generate-folio")]
+    public async Task<IActionResult> GenerateForFolio([FromBody] GenerateOtpFolioRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(_connStr))
+            return Ok(new { success = false, message = "SQL Server no configurado." });
 
-public sealed record ValidateOtpRequest(
-    string Otp,
-    string OperatorId,
-    string SupervisorId,
-    string BatchId,
-    string ClaimedBatchId,
-    string HardwareId,
-    string UserAgent,
-    string Platform,
-    Coordinate OperatorCoordinate,
-    Coordinate SupervisorCoordinate);
+        await using var conn = new SqlConnection(_connStr);
 
-public sealed record ValidateOtpResponse(bool IsValid, OtpValidationStatus Status, string Message);
+        // Verificar supervisor autorizado en Tb_Autoriza_OdeP
+        var esAutorizado = await conn.ExecuteScalarAsync<int>(@"
+            SELECT COUNT(1) FROM Tb_Autoriza_OdeP
+            WHERE LTRIM(RTRIM(usuario)) = @u AND LTRIM(RTRIM(clave)) = 'EM'",
+            new { u = req.SupervisorId });
 
-public sealed class OtpRecord
-{
-    public Guid Id { get; init; } = Guid.NewGuid();
-    public required string Otp { get; init; }
-    public required string BatchId { get; init; }
-    public required string SupervisorId { get; init; }
-    public required string OperatorId { get; init; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public DateTimeOffset ExpiresAt { get; init; }
-    public bool IsUsed { get; set; }
-    public DateTimeOffset? UsedAt { get; set; }
-}
+        if (esAutorizado == 0)
+            return Ok(new { success = false, message = "Supervisor no autorizado en el sistema." });
 
-public interface IOtpRepository
-{
-    Task Save(OtpRecord record);
-    Task<OtpRecord?> GetLatest(string batchId, string supervisorId);
-    Task Update(OtpRecord record);
+        // Leer el folio pendiente
+        var folio = await conn.QueryFirstOrDefaultAsync<FolioRecord>(@"
+            SELECT prod_clave AS ProdClave, recibo_sug AS ReciboSug,
+                   tarimasug AS TarimaSug, otp_status AS OtpStatus
+            FROM tb_det_folio_adelantado
+            WHERE LTRIM(RTRIM(emb_folio)) = @f AND otp_status = 'PENDING'",
+            new { f = req.EmbFolio.Trim() });
+
+        if (folio == null)
+            return Ok(new { success = false, message = "Folio no encontrado o ya procesado." });
+
+        // Verificar dispositivo enrolado
+        var device = await _devices.GetByIdAsync(req.SupervisorId);
+        if (device == null)
+            return Ok(new { success = false, message = $"Supervisor '{req.SupervisorId}' no enrolado en ATU. Inicia sesión en la app.", errors = new[] { "NOT_ENROLLED" } });
+
+        var secret = _encryption.Decrypt(device.EncryptedSecret);
+        var batchId = ATUCore.BuildBatchId(folio.ProdClave, folio.ReciboSug, folio.TarimaSug.ToString());
+        var otp = ATUCore.GenerateOTP(secret, batchId, req.SupervisorId);
+        var expires = DateTimeOffset.UtcNow.AddSeconds(ATUCore.TtlSeconds);
+
+        // Guardar hash del OTP (nunca el OTP en claro)
+        var otpHash = ComputeOtpHash(otp, req.EmbFolio);
+
+        await conn.ExecuteAsync(@"
+            UPDATE tb_det_folio_adelantado SET
+                otp_hash         = @hash,
+                otp_generado_por = @sup,
+                otp_generado_at  = GETUTCDATE(),
+                otp_expires_at   = @exp,
+                otp_device_fp    = @fp,
+                autorizo         = @sup
+            WHERE LTRIM(RTRIM(emb_folio)) = @f AND otp_status = 'PENDING'",
+            new
+            {
+                hash = otpHash,
+                sup = req.SupervisorId,
+                exp = expires.UtcDateTime,
+                fp = req.DeviceFingerprint,
+                f = req.EmbFolio.Trim()
+            });
+
+        // Guardar en repositorio en memoria para validación rápida
+        await _otps.SaveAsync(new OtpRecord
+        {
+            Otp = otp,
+            BatchId = batchId,
+            SupervisorId = req.SupervisorId,
+            OperatorId = req.SupervisorId,
+            GeneratedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = expires,
+            IsUsed = false
+        });
+
+        await EmitirAuditEvent("blue", "🔑 OTP Folio Adelantado", batchId,
+            req.SupervisorId, req.EmbFolio,
+            $"OTP generado para folio {req.EmbFolio}. Expira en {ATUCore.TtlSeconds}s.");
+
+        await InsertAudit(conn, req.EmbFolio, "OTP_GENERATED", req.SupervisorId,
+            req.DeviceFingerprint, folio.ProdClave, folio.ReciboSug, folio.TarimaSug.ToString());
+
+        return Ok(new
+        {
+            success = true,
+            message = "OTP generado correctamente",
+            data = new
+            {
+                code = otp,
+                generatedAt = DateTime.UtcNow,
+                expiresAt = expires.UtcDateTime,
+                secondsRemaining = ATUCore.TtlSeconds,
+                batchId,
+                transactionId = Guid.NewGuid().ToString()
+            },
+            errors = new List<string>()
+        });
+    }
+
+    [HttpPost("validate-folio")]
+    public async Task<IActionResult> ValidateForFolio([FromBody] ValidateOtpFolioRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(_connStr))
+            return Ok(new { success = false, status = "Red", message = "SQL Server no configurado." });
+
+        await using var conn = new SqlConnection(_connStr);
+        var folio = await conn.QueryFirstOrDefaultAsync<FolioRecord>(@"
+                    SELECT prod_clave       AS ProdClave,
+                           recibo_sug       AS ReciboSug,
+                           tarimasug        AS TarimaSug,
+                           otp_status       AS OtpStatus,
+                           otp_expires_at   AS OtpExpiresAt,
+                           otp_generado_por AS OtpGeneradoPor,
+                           otp_intentos     AS OtpIntentos
+                    FROM tb_det_folio_adelantado
+                    WHERE LTRIM(RTRIM(emb_folio)) = @f
+                      AND LTRIM(RTRIM(prod_clave)) = @pc
+                      AND LTRIM(RTRIM(recibo_sug)) = @rs
+                      AND tarimasug = @ts",
+                    new
+                    {
+                        f = req.EmbFolio.Trim(),
+                        pc = req.ClaimedProdClave.Trim(),
+                        rs = req.ClaimedReciboSug.Trim(),
+                        ts = req.ClaimedTarimaSug
+                    });
+
+        if (folio == null)
+            return Ok(new { success = false, status = "Red", message = "Folio no encontrado.", isAuthorized = false });
+        if (folio.OtpStatus == "AUTHORIZED")
+            return Ok(new { success = false, status = "Red", message = "Folio ya autorizado (posible replay).", isAuthorized = false });
+        if (folio.OtpStatus != "PENDING")
+            return Ok(new { success = false, status = "Red", message = $"Estado inválido: {folio.OtpStatus}.", isAuthorized = false });
+        if (folio.OtpExpiresAt.HasValue && DateTime.UtcNow > folio.OtpExpiresAt.Value)
+        {
+            await conn.ExecuteAsync("UPDATE tb_det_folio_adelantado SET otp_status='EXPIRED' WHERE LTRIM(RTRIM(emb_folio))=@f", new { f = req.EmbFolio.Trim() });
+            await EmitirAuditEvent("yellow", "⏱ OTP Expirado",
+                $"{folio.ProdClave}-{folio.ReciboSug}-{folio.TarimaSug}",
+                folio.OtpGeneradoPor, req.EmbFolio, "Expiró antes de ser validado.");
+            return Ok(new { success = false, status = "Yellow", message = "OTP expirado. Solicite un nuevo código.", isAuthorized = false });
+        }
+        if (folio.OtpIntentos >= 3)
+            return Ok(new { success = false, status = "Red", message = "Demasiados intentos. Solicite nuevo OTP.", isAuthorized = false });
+
+        // Construir batchIds
+        var claimedBatchId = ATUCore.BuildBatchId(folio.ProdClave, folio.ReciboSug, folio.TarimaSug.ToString());
+        var actualBatchId = ATUCore.BuildBatchId(req.ActualProdClave, req.ActualRecibo, req.ActualTarima.ToString());
+
+        // Obtener secret del supervisor que generó el OTP (sin necesitar supervisorId del cliente)
+        var supId = folio.OtpGeneradoPor;
+        var device = await _devices.GetByIdAsync(supId);
+        if (device == null)
+            return Ok(new { success = false, status = "Red", message = "No se pudo identificar al supervisor que generó el OTP.", isAuthorized = false });
+
+        var secret = _encryption.Decrypt(device.EncryptedSecret);
+        var result = ATUCore.ValidateFIFO(req.Code, secret, claimedBatchId, actualBatchId, supId);
+
+        var newStatus = result.Status switch
+        {
+            ATUStatus.Green => "AUTHORIZED",
+            ATUStatus.Yellow => "EXPIRED",
+            ATUStatus.Red when result.Message.Contains("FRAUDE") => "FRAUD",
+            _ => "INVALID"
+        };
+
+        var rowsAffected = await conn.ExecuteAsync(@"
+            UPDATE tb_det_folio_adelantado SET 
+                otp_status   = @status,
+                otp_usado_at = CASE WHEN @status='AUTHORIZED'
+                                    THEN GETUTCDATE()
+                                    ELSE otp_usado_at
+                               END
+             WHERE LTRIM(RTRIM(emb_folio)) = @f
+               AND otp_status = 'PENDING'",
+        new
+        {
+            status = newStatus,
+            f = req.EmbFolio.Trim()
+        });
+
+        if (rowsAffected == 0)
+        {
+            return Ok(new
+            {
+                success = false,
+                status = "Red",
+                message = "El folio ya fue procesado por otro usuario.",
+                isAuthorized = false
+            });
+        }
+
+        // Marcar OTP en memoria como usado
+        var stored = await _otps.GetByBatchAndSupervisorAsync(claimedBatchId, supId);
+        if (stored != null) { stored.IsUsed = true; stored.UsedAt = DateTimeOffset.UtcNow; await _otps.UpdateAsync(stored); }
+
+        var eventoColor = newStatus == "AUTHORIZED" ? "green" : newStatus == "FRAUD" ? "red" : "yellow";
+        var eventoTitle = newStatus == "AUTHORIZED" ? "✅ Folio Adelantado Autorizado"
+                        : newStatus == "FRAUD" ? "🚨 FRAUDE DETECTADO"
+                        : "❌ OTP Inválido";
+
+        await EmitirAuditEvent(eventoColor, eventoTitle, actualBatchId, supId, req.EmbFolio,
+            result.Message, newStatus == "FRAUD");
+
+        await InsertAudit(conn, req.EmbFolio,
+            newStatus == "AUTHORIZED" ? "OTP_VALIDATED" : newStatus,
+            supId, null, req.ActualProdClave, req.ActualRecibo, req.ActualTarima.ToString(),
+            result.Message);
+
+        return Ok(new
+        {
+            success = result.IsAuthorized,
+            status = result.Status.ToString(),
+            message = result.Message,
+            isAuthorized = result.IsAuthorized,
+            supervisorId = supId   // ← el servidor resuelve el supervisorId
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Helpers privados
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private async Task EmitirAuditEvent(string status, string title, string batchId,
+        string supervisorId, string operatorId, string message, bool isFraud = false)
+    {
+        try
+        {
+            await _auditHub.Clients.All.SendAsync("AuditEvent", new
+            {
+                status,
+                title,
+                batchId,
+                supervisorId,
+                operatorId,
+                message,
+                isFraud,
+                timestamp = DateTime.UtcNow,
+                eventId = Guid.NewGuid()
+            });
+        }
+        catch { /* No interrumpir el flujo si SignalR falla */ }
+    }
+
+    private static async Task InsertAudit(SqlConnection conn, string embFolio, string evento,
+        string supervisorId, string? deviceFp, string prodClave, string recibo, string tarima,
+        string mensaje = "")
+    {
+        try
+        {
+            await conn.ExecuteAsync(@"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='tb_atu_audit')
+                INSERT INTO tb_atu_audit
+                    (emb_folio,evento,supervisor_id,device_fp,prod_clave,recibo,tarima,mensaje,created_at)
+                VALUES (@embFolio,@evento,@supervisorId,@deviceFp,@prodClave,@recibo,@tarima,@mensaje,GETUTCDATE())",
+                new { embFolio, evento, supervisorId, deviceFp, prodClave, recibo, tarima, mensaje });
+        }
+        catch { /* Auditoría no debe interrumpir flujo */ }
+    }
+
+    private static string ComputeOtpHash(string otp, string folio)
+    {
+        using var sha = SHA256.Create();
+        var input = Encoding.UTF8.GetBytes($"{otp}:{folio}:ATU-SALT-2024");
+        return Convert.ToHexString(sha.ComputeHash(input));
+    }
+
+    private static string Truncate(string s, int max)
+        => s.Length > max ? s[..max] : s;
 }

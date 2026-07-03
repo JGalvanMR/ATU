@@ -1,17 +1,31 @@
+using ATU.Shared.Models;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ATU.Shared;
+namespace ATU.Shared.Models;
 
 public sealed class EnrolledDevice
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public required string OperatorId { get; init; }
-    public required string Fingerprint { get; init; }
+    public required string Fingerprint { get; init; }  // Se mantiene como Fingerprint (no DeviceFingerprint)
     public required string EncryptedSecret { get; init; }
+    public required string PushToken { get; init; } = string.Empty;  // AGREGADO
     public bool IsActive { get; set; } = true;
     public DateTimeOffset EnrolledAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? RevokedAt { get; set; }
+    public DateTimeOffset? LastUsedAt { get; set; }  // AGREGADO (opcional pero útil)
+    public string ColdStorageZoneId { get; init; } = string.Empty;  // AGREGADO
+
+    // Alias por compatibilidad si algún código usa AssignedZoneId:
+    public string AssignedZoneId
+    {
+        get => ColdStorageZoneId;
+        init => ColdStorageZoneId = value;
+    }
+
+    // Alias por compatibilidad si algún código usa DeviceFingerprint:
+    public string DeviceFingerprint => Fingerprint;
 }
 
 public sealed class DeviceEnrollmentService(IDeviceRepository repository, IEncryptionService encryptionService)
@@ -33,7 +47,10 @@ public sealed class DeviceEnrollmentService(IDeviceRepository repository, IEncry
         {
             OperatorId = request.OperatorId,
             Fingerprint = fingerprint,
-            EncryptedSecret = encryptionService.Encrypt(secret)
+            EncryptedSecret = encryptionService.Encrypt(secret),
+            PushToken = string.Empty,  // Se puede actualizar después con un método específico para registrar el token
+            ColdStorageZoneId = string.Empty,  // Se puede asignar después según la lógica de distribución de zonas
+
         };
 
         await repository.AddAsync(device);
@@ -49,7 +66,7 @@ public sealed class DeviceEnrollmentService(IDeviceRepository repository, IEncry
         }
 
         var incomingFingerprint = ComputeFingerprint(hardwareId, userAgent, platform);
-        if (!ATUCore.FixedTimeEquals(active.Fingerprint, incomingFingerprint))
+        if (!ATUCore.CryptographicEquals(active.Fingerprint, incomingFingerprint))
         {
             return new DeviceValidationResult(false, null, "Fingerprint inválido.");
         }
@@ -83,12 +100,7 @@ public sealed record EnrollDeviceRequest(string OperatorId, string HardwareId, s
 public sealed record EnrollDeviceResult(Guid DeviceId, string Secret, string Fingerprint);
 public sealed record DeviceValidationResult(bool IsValid, string? Secret, string Message);
 
-public interface IDeviceRepository
-{
-    Task<EnrolledDevice?> GetActiveByOperatorAsync(string operatorId);
-    Task AddAsync(EnrolledDevice device);
-    Task UpdateAsync(EnrolledDevice device);
-}
+
 
 public interface IEncryptionService
 {
