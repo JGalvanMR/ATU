@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSignalR();
-
 var app = builder.Build();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+/*
 //app.MapHub<AuditHub>("/hubs/audit");
 app.MapHub<AuditHub>("/audit-hub");
 
@@ -143,7 +142,6 @@ app.MapGet("/test-fifo-scenario", async (IHubContext<AuditHub> hub) =>
         events = new[] { "OTP Generated", "Authorized", "Expired", "FRAUD" }
     });
 });
-
 // Helper para crear eventos
 static object CreateTestEvent(string status, object? overrides = null)
 {
@@ -186,5 +184,6 @@ static object CreateTestEvent(string status, object? overrides = null)
 
     return dict;
 }
+*/
 
 app.Run();

@@ -3,928 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATU · Monitor</title>
-    <link rel="manifest" href="/manifest.json">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>ATU Dashboard en Vivo</title>
     <style>
-        /* (todo tu CSS permanece igual, no lo cambio por brevedad) */
-        :root {
-            --bg: #070B18;
-            --s: #0D1525;
-            --s2: #13203A;
-            --b: #1E3050;
-            --a: #00D4FF;
-            --g: #00FF88;
-            --y: #FFB800;
-            --r: #FF2D55;
-            --t: #E8F4FF;
-            --td: #5A7FA8;
-            --m: 'IBM Plex Mono',monospace
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-
         body {
-            font-family: 'Space Grotesk',sans-serif;
-            background: var(--bg);
-            color: var(--t);
-            min-height: 100vh
+            font-family: Arial, sans-serif;
+            background: #f4f7f6;
+            padding: 20px;
         }
 
-            body::before {
-                content: '';
-                position: fixed;
-                inset: 0;
-                background-image: linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);
-                background-size: 40px 40px;
-                pointer-events: none
-            }
-
-        .app {
-            position: relative;
-            z-index: 1
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 28px;
-            border-bottom: 1px solid var(--b);
-            background: rgba(13,21,37,.95);
-            backdrop-filter: blur(20px);
-            position: sticky;
-            top: 0;
-            z-index: 100
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
-
-        .logo-icon {
-            width: 34px;
-            height: 34px;
-            background: linear-gradient(135deg,var(--a),#0066FF);
-            border-radius: 8px;
-            display: grid;
-            place-items: center;
-            font-size: 17px
-        }
-
-        .logo-text {
-            font-family: var(--m);
-            font-weight: 700;
-            font-size: 13px;
-            color: var(--a);
-            letter-spacing: 2px
-        }
-
-        .logo-sub {
-            font-size: 10px;
-            color: var(--td);
-            letter-spacing: 1px;
-            text-transform: uppercase
-        }
-
-        .hdr-r {
-            display: flex;
-            align-items: center;
-            gap: 16px
-        }
-
-        .conn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: var(--m);
-            font-size: 11px;
-            color: var(--td)
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--g);
-            animation: blink 2s infinite
-        }
-
-            .dot.off {
-                background: var(--r);
-                animation: none
-            }
-
-        @keyframes blink {
-            50% {
-                opacity: .5
-            }
-        }
-
-        .clk {
-            font-family: var(--m);
-            font-size: 13px;
-            color: var(--a);
-            letter-spacing: 1px
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 360px 1fr;
-            grid-template-rows: auto 1fr;
-            height: calc(100vh - 65px)
-        }
-
-        .stats {
-            grid-column: 1/-1;
-            display: flex;
-            gap: 1px;
-            background: var(--b);
-            border-bottom: 1px solid var(--b)
-        }
-
-        .stat {
-            flex: 1;
-            padding: 14px 20px;
-            background: var(--s);
-            display: flex;
-            align-items: center;
-            gap: 14px
-        }
-
-        .si {
-            width: 38px;
-            height: 38px;
-            display: grid;
-            place-items: center;
-            border-radius: 10px;
-            font-size: 20px
-        }
-
-            .si.g {
-                background: rgba(0,255,136,.1)
-            }
-
-            .si.y {
-                background: rgba(255,184,0,.1)
-            }
-
-            .si.r {
-                background: rgba(255,45,85,.1)
-            }
-
-            .si.b {
-                background: rgba(0,212,255,.1)
-            }
-
-        .sv {
-            font-family: var(--m);
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1
-        }
-
-            .sv.g {
-                color: var(--g)
-            }
-
-            .sv.y {
-                color: var(--y)
-            }
-
-            .sv.r {
-                color: var(--r)
-            }
-
-            .sv.b {
-                color: var(--a)
-            }
-
-        .sl {
-            font-size: 11px;
-            color: var(--td);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-top: 4px
-        }
-
-        .sem {
-            background: var(--s);
-            border-right: 1px solid var(--b);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden
-        }
-
-        .ph {
-            padding: 18px 22px 14px;
-            border-bottom: 1px solid var(--b);
-            display: flex;
-            align-items: center;
-            justify-content: space-between
-        }
-
-        .pt {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--td)
-        }
-
-        .sc {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 28px;
-            gap: 20px
-        }
-
-        .tl {
-            width: 112px;
-            background: #0A1525;
-            border: 2px solid var(--b);
-            border-radius: 18px;
-            padding: 18px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            align-items: center
-        }
-
-        .light {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,.05);
-            transition: all .4s;
-            position: relative
-        }
-
-            .light.ar {
-                background: var(--r);
-                box-shadow: 0 0 28px var(--r)
-            }
-
-            .light.ay {
-                background: var(--y);
-                box-shadow: 0 0 28px var(--y)
-            }
-
-            .light.ag {
-                background: var(--g);
-                box-shadow: 0 0 28px var(--g)
-            }
-
-            .light:not(.ar):not(.ay):not(.ag) {
-                background: rgba(255,255,255,.05)
-            }
-
-            .light.ag::after, .light.ay::after, .light.ar::after {
-                content: '';
-                position: absolute;
-                inset: -8px;
-                border-radius: 50%;
-                animation: rp 1.5s ease-out infinite
-            }
-
-            .light.ag::after {
-                border: 2px solid var(--g)
-            }
-
-            .light.ay::after {
-                border: 2px solid var(--y)
-            }
-
-            .light.ar::after {
-                border: 2px solid var(--r)
-            }
-
-        @keyframes rp {
-            to {
-                transform: scale(1.6);
-                opacity: 0
-            }
-        }
-
-        .ss {
-            text-align: center
-        }
-
-        .st {
-            font-size: 17px;
-            font-weight: 700;
-            margin-bottom: 5px
-        }
-
-            .st.g {
-                color: var(--g)
-            }
-
-            .st.y {
-                color: var(--y)
-            }
-
-            .st.r {
-                color: var(--r)
-            }
-
-            .st.i {
-                color: var(--td)
-            }
-
-        .sd {
-            font-size: 11px;
-            color: var(--td);
-            font-family: var(--m);
-            line-height: 1.5;
-            max-width: 270px;
-            text-align: center
-        }
-
-        .bc {
-            width: 100%;
-            background: var(--s2);
-            border: 1px solid var(--b);
-            border-radius: 11px;
-            padding: 14px
-        }
-
-        .br {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255,255,255,.04);
-            font-size: 12px
-        }
-
-            .br:last-child {
-                border-bottom: none
-            }
-
-        .bk {
-            color: var(--td);
-            font-family: var(--m)
-        }
-
-        .bv {
-            color: var(--t);
-            font-weight: 600;
-            font-family: var(--m)
-        }
-
-        .ac {
-            color: var(--a)
-        }
-
-        .ap {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden
-        }
-
-        .af {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0
-        }
-
-            .af::-webkit-scrollbar {
-                width: 4px
-            }
-
-            .af::-webkit-scrollbar-thumb {
-                background: var(--b);
-                border-radius: 2px
-            }
-
-        .filters {
-            padding: 10px 20px;
-            border-bottom: 1px solid var(--b);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            background: var(--s)
-        }
-
-        .fb {
-            padding: 4px 11px;
-            border-radius: 6px;
-            border: 1px solid var(--b);
-            background: transparent;
-            color: var(--td);
-            font-size: 11px;
-            font-family: var(--m);
-            cursor: pointer;
-            transition: all .15s
-        }
-
-            .fb.on {
-                background: rgba(0,212,255,.1);
-                border-color: var(--a);
-                color: var(--a)
-            }
-
-            .fb.rf.on {
-                background: rgba(255,45,85,.1);
-                border-color: var(--r);
-                color: var(--r)
-            }
-
-        .fsp {
-            flex: 1
-        }
-
-        .liv {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-family: var(--m);
-            font-size: 11px;
-            color: var(--g)
-        }
-
-        .ld {
-            width: 6px;
-            height: 6px;
-            background: var(--g);
-            border-radius: 50%;
-            animation: blink 1s infinite
-        }
-
-        .ae {
-            display: grid;
-            grid-template-columns: 4px 60px 1fr auto;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 22px;
-            border-bottom: 1px solid rgba(30,48,80,.5);
-            position: relative;
-            animation: si .25s ease-out
-        }
-
-            .ae:hover {
-                background: rgba(255,255,255,.02)
-            }
-
-        @keyframes si {
-            from {
-                transform: translateX(-6px);
-                opacity: 0
-            }
-        }
-
-        .estr {
-            width: 4px;
-            height: 100%;
-            position: absolute;
-            left: 0;
-            top: 0;
-            border-radius: 0 2px 2px 0
-        }
-
-            .estr.green {
-                background: var(--g)
-            }
-
-            .estr.yellow {
-                background: var(--y)
-            }
-
-            .estr.red {
-                background: var(--r)
-            }
-
-            .estr.blue {
-                background: var(--a)
-            }
-
-        .et {
-            font-family: var(--m);
-            font-size: 11px;
-            color: var(--td);
-            white-space: nowrap
-        }
-
-        .eb {
-            min-width: 0
-        }
-
-        .etit {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis
-        }
-
-        .emeta {
-            font-family: var(--m);
-            font-size: 11px;
-            color: var(--td)
-        }
-
-            .emeta span {
-                margin-right: 10px
-            }
-
-        .bat {
-            color: var(--a)
-        }
-
-        .sup {
-            color: #A78BFA
-        }
-
-        .ebadge {
-            padding: 3px 7px;
+        .event-card {
+            border-left: 5px solid #ccc;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
             border-radius: 4px;
-            font-family: var(--m);
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            white-space: nowrap
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-            .ebadge.green {
-                background: rgba(0,255,136,.15);
-                color: var(--g)
-            }
-
-            .ebadge.yellow {
-                background: rgba(255,184,0,.15);
-                color: var(--y)
-            }
-
-            .ebadge.red {
-                background: rgba(255,45,85,.15);
-                color: var(--r)
-            }
-
-            .ebadge.blue {
-                background: rgba(0,212,255,.15);
-                color: var(--a)
-            }
-
-        .emp2 {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            gap: 11px;
-            color: var(--td);
-            font-size: 13px;
-            padding: 40px
+        .green {
+            border-color: #28a745;
         }
 
-        .fo {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.85);
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center
+        .yellow {
+            border-color: #ffc107;
         }
 
-            .fo.vis {
-                display: flex
-            }
-
-        .fm {
-            background: var(--s);
-            border: 2px solid var(--r);
-            border-radius: 16px;
-            padding: 36px;
-            max-width: 460px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 0 60px rgba(255,45,85,.25)
+        .red {
+            border-color: #dc3545;
         }
 
-        .fi {
-            font-size: 60px;
-            margin-bottom: 14px
+        .blue {
+            border-color: #007bff;
         }
 
-        .ft {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--r);
-            margin-bottom: 7px
-        }
-
-        .fd {
-            color: var(--td);
-            margin-bottom: 20px;
-            line-height: 1.6
-        }
-
-        .fdet {
-            background: rgba(255,45,85,.08);
-            border: 1px solid rgba(255,45,85,.3);
-            border-radius: 10px;
-            padding: 14px;
-            font-family: var(--m);
+        .status-badge {
+            font-weight: bold;
+            text-transform: uppercase;
             font-size: 12px;
-            text-align: left;
-            margin-bottom: 20px
         }
 
-        .fdr {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            color: var(--td)
+        #connection-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
         }
 
-            .fdr span:last-child {
-                color: var(--r);
-                font-weight: 700
-            }
-
-        .bd {
-            background: var(--r);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 11px 28px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: 'Space Grotesk',sans-serif
+        .connected {
+            background: #d4edda;
+            color: #155724;
         }
 
-        .tc {
-            width: 100%
-        }
-
-        .tl2 {
-            display: flex;
-            justify-content: space-between;
-            font-family: var(--m);
-            font-size: 11px;
-            color: var(--td);
-            margin-bottom: 5px
-        }
-
-        .tb {
-            height: 4px;
-            background: var(--s2);
-            border-radius: 2px;
-            overflow: hidden
-        }
-
-        .tf {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 1s linear
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-    <div class="app">
-        <header>
-            <div class="logo">
-                <div class="logo-icon">🔐</div>
-                <div>
-                    <div class="logo-text">ATU · MONITOR</div>
-                    <div class="logo-sub">Autorización Transaccional Única</div>
-                </div>
-            </div>
-            <div class="hdr-r">
-                <div class="conn"><div class="dot off" id="cdot"></div><span id="ctxt">CONECTANDO...</span></div>
-                <div class="clk" id="clk">--:--:--</div>
-            </div>
-        </header>
-        <div class="grid">
-            <div class="stats">
-                <div class="stat"><div class="si g">✅</div><div><div class="sv g" id="sa">0</div><div class="sl">Autorizadas hoy</div></div></div>
-                <div class="stat"><div class="si b">🔔</div><div><div class="sv b" id="sp">0</div><div class="sl">Pendientes</div></div></div>
-                <div class="stat"><div class="si y">⏱</div><div><div class="sv y" id="se">0</div><div class="sl">Expiradas</div></div></div>
-                <div class="stat"><div class="si r">🚨</div><div><div class="sv r" id="sf">0</div><div class="sl">Fraudes</div></div></div>
-            </div>
-            <div class="sem">
-                <div class="ph"><div class="pt">Última transacción</div><div style="font-size:11px;color:var(--td);font-family:var(--m)">EN VIVO</div></div>
-                <div class="sc">
-                    <div class="tl">
-                        <div class="light" id="lr"></div>
-                        <div class="light" id="ly"></div>
-                        <div class="light" id="lg"></div>
-                    </div>
-                    <div class="ss">
-                        <div class="st i" id="stt">EN ESPERA</div>
-                        <div class="sd" id="sdt">Esperando próxima autorización...</div>
-                    </div>
-                    <div class="bc" id="bcard" style="display:none">
-                        <div class="br"><span class="bk">LOTE</span><span class="bv ac" id="bl">—</span></div>
-                        <div class="br"><span class="bk">FOLIO</span><span class="bv" id="bop">—</span></div>
-                        <div class="br"><span class="bk">SUPERVISOR</span><span class="bv" id="bs">—</span></div>
-                        <div class="br"><span class="bk">HORA</span><span class="bv" id="bt">—</span></div>
-                    </div>
-                    <div class="tc" id="tc" style="display:none">
-                        <div class="tl2"><span>Ventana OTP</span><span id="ts">30s</span></div>
-                        <div class="tb"><div class="tf" id="tf" style="width:100%"></div></div>
-                    </div>
-                </div>
-            </div>
-            <div class="ap">
-                <div class="ph"><div class="pt">Feed en tiempo real</div></div>
-                <div class="filters">
-                    <button class="fb on" onclick="fil('all',this)">TODOS</button>
-                    <button class="fb" onclick="fil('green',this)">AUTORIZADOS</button>
-                    <button class="fb" onclick="fil('blue',this)">PENDIENTES</button>
-                    <button class="fb" onclick="fil('yellow',this)">EXPIRADOS</button>
-                    <button class="fb rf" onclick="fil('red',this)">🚨 FRAUDE</button>
-                    <div class="fsp"></div>
-                    <div class="liv"><div class="ld"></div><span>EN VIVO</span></div>
-                </div>
-                <div class="af" id="af">
-                    <div class="emp2" id="empty">
-                        <div style="font-size:40px;opacity:.3">📊</div>
-                        <div>Sin eventos aún</div>
-                        <div style="font-family:var(--m);font-size:11px">Conectando al servidor ATU...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
+    <h1>📡 Monitor de Autorizaciones ATU</h1>
+    <div id="connection-status" class="disconnected">Desconectado del servidor...</div>
+
+    <div id="events-container">
+        <!-- Los eventos llegarán aquí -->
     </div>
-    <div class="fo" id="fo">
-        <div class="fm">
-            <div class="fi">🚨</div>
-            <div class="ft">¡FRAUDE DETECTADO!</div>
-            <div class="fd" id="fdesc"></div>
-            <div class="fdet">
-                <div class="fdr"><span>Supervisor:</span><span id="fasup">—</span></div>
-                <div class="fdr"><span>Lote:</span><span id="fabat">—</span></div>
-                <div class="fdr"><span>Hora:</span><span id="fatim">—</span></div>
-            </div>
-            <button class="bd" onclick="document.getElementById('fo').classList.remove('vis')">CONFIRMAR Y REGISTRAR</button>
-        </div>
-    </div>
+
+    <!-- ✅ LIBRERÍA DE SIGNALR (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
     <script>
-        // ════════════════════════════════════════════════════════════════════════
-        // ATU Dashboard - Conexión SignalR local (mismo origen)
-        // ════════════════════════════════════════════════════════════════════════
-        const ST = { events: [], stats: { g: 0, b: 0, y: 0, r: 0 }, filter: 'all', ti: null, ts: null };
+        // ⚠️ CAMBIA ESTA URL AL PUERTO DONDE CORRE TU ATU.AuthService ⚠️
+        const AUTH_SERVICE_URL = "http://localhost:5000/audit-hub";
 
-        // Reloj
-        setInterval(() => document.getElementById('clk').textContent =
-            new Date().toLocaleTimeString('es-MX', { hour12: false }), 1000);
+        const statusDiv = document.getElementById("connection-status");
+        const container = document.getElementById("events-container");
 
-        // ── SignalR (usando ruta relativa para evitar CORS) ──
-        const conn = new signalR.HubConnectionBuilder()
-            .withUrl("/audit-hub")
-            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
-            .configureLogging(signalR.LogLevel.Warning)
+        // Construir la conexión
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(AUTH_SERVICE_URL)
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000]) // Reintenta si se cae
+            .configureLogging(signalR.LogLevel.Information)
             .build();
 
-        conn.on("AuditEvent", e => handleEvent(e));
-        conn.on("FraudAlert", e => showFraud(e));
+        // Función para pintar la tarjeta en pantalla
+        function addEventToUI(event) {
+            const card = document.createElement("div");
+            card.className = `event-card ${event.status}`;
 
-        conn.onreconnecting(() => { setConn(false, 'RECONECTANDO...'); });
-        conn.onreconnected(() => { setConn(true, 'CONECTADO'); });
-        conn.onclose(() => setConn(false, 'DESCONECTADO — recargue la página'));
+            const time = new Date(event.timestamp).toLocaleTimeString('es-MX');
+            const fraudWarning = event.isFraud ? '<div style="color:red; font-weight:bold; margin-top:10px;">🚨 ¡ALERTA DE FRAUDE DETECTADA!🚨</div>' : '';
 
-        async function start() {
+            card.innerHTML = `
+                <div><span class="status-badge" style="color: ${event.status === 'red' ? 'red' : event.status === 'green' ? 'green' : 'orange'}">${event.status}</span> - <strong>${time}</strong></div>
+                <h3 style="margin: 5px 0;">${event.title}</h3>
+                <p style="margin: 5px 0; color: #555;">${event.message}</p>
+                <div style="font-size: 12px; color: #888;">
+                    Lote: ${event.batchId || 'N/A'} | Supervisor: ${event.supervisorId || 'N/A'} | Operador: ${event.operatorId || 'N/A'}
+                </div>
+                ${fraudWarning}
+            `;
+
+            // Insertar el nuevo evento arriba del todo
+            container.prepend(card);
+        }
+
+        // Escuchar el evento principal que manda tu OTPController
+        connection.on("AuditEvent", (event) => {
+            console.log("Evento recibido:", event);
+            addEventToUI(event);
+
+            // Si es fraude, lanzar alerta nativa del navegador
+            if (event.isFraud) {
+                alert("¡INTENTO DE FRAUDE!\n" + event.message);
+            }
+        });
+
+        // Escuchar el evento de nueva solicitud (cuando CargaEmbarques pide autorización)
+        connection.on("NuevoFolioAdelantado", (notif) => {
+            console.log("Nueva solicitud de folio:", notif);
+            addEventToUI({
+                status: "blue",
+                title: "🔔 Nueva Solicitud de Folio",
+                message: `Embarque ${notif.embFolio} - Producto: ${notif.producto}. Motivo: ${notif.motivo}`,
+                supervisorId: notif.responsable,
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        // Manejo de estado de conexión
+        connection.onreconnecting(() => {
+            statusDiv.className = "disconnected";
+            statusDiv.innerText = "Perdiendo conexión... Reconectando";
+        });
+
+        connection.onreconnected(() => {
+            statusDiv.className = "connected";
+            statusDiv.innerText = "Reconectado al servidor";
+        });
+
+        connection.onclose(() => {
+            statusDiv.className = "disconnected";
+            statusDiv.innerText = "Desconectado. Intentando reconectar...";
+        });
+
+        // Iniciar conexión
+        async function startConnection() {
             try {
-                await conn.start();
-                setConn(true, 'CONECTADO');
-                document.querySelector('.emp2').innerHTML =
-                    '<div style="font-size:40px;opacity:.3">📊</div>' +
-                    '<div>Conectado · Esperando eventos...</div>' +
-                    '<div style="font-family:var(--m);font-size:11px">SignalR hub: /audit-hub</div>';
-            } catch (e) {
-                setConn(false, 'ERROR — ' + e.message);
-                setTimeout(start, 5000);
+                await connection.start();
+                statusDiv.className = "connected";
+                statusDiv.innerText = "Conectado en tiempo real al servidor ATU";
+                console.log("SignalR Connected.");
+            } catch (err) {
+                console.error(err);
+                setTimeout(startConnection, 5000); // Reintento manual
             }
         }
-        start();
 
-        function setConn(ok, txt) {
-            document.getElementById('cdot').className = 'dot' + (ok ? '' : ' off');
-            document.getElementById('ctxt').textContent = txt;
-        }
-
-        // ── Event handlers ────────────────────────────────────────────────────────────
-        function handleEvent(e) {
-            e.timestamp = e.timestamp || new Date().toISOString();
-            ST.events.unshift(e);
-            if (ST.events.length > 500) ST.events.length = 500;
-
-            if (e.status === 'green') ST.stats.g++;
-            if (e.status === 'blue') ST.stats.b++;
-            if (e.status === 'yellow') ST.stats.y++;
-            if (e.status === 'red') ST.stats.r++;
-
-            updStats(); updSem(e); render();
-            if (e.isFraud) showFraud(e);
-        }
-
-        function updStats() {
-            document.getElementById('sa').textContent = ST.stats.g;
-            document.getElementById('sp').textContent = ST.stats.b;
-            document.getElementById('se').textContent = ST.stats.y;
-            document.getElementById('sf').textContent = ST.stats.r;
-        }
-
-        function updSem(e) {
-            ['r', 'y', 'g'].forEach(c => { document.getElementById('l' + c).className = 'light'; });
-            const cm = { green: 'g', yellow: 'y', red: 'r', blue: 'y' };
-            const c = cm[e.status] || 'y';
-            document.getElementById('l' + c).classList.add('a' + c);
-
-            const tt = { green: 'AUTORIZADO ✓', yellow: 'CÓDIGO EXPIRADO', red: '¡FRAUDE!', blue: 'SOLICITUD PENDIENTE' };
-            const stt = document.getElementById('stt');
-            stt.className = 'st ' + (e.status === 'blue' ? 'i' : e.status);
-            stt.textContent = tt[e.status] || 'PROCESANDO';
-            document.getElementById('sdt').textContent = e.message;
-
-            document.getElementById('bcard').style.display = 'block';
-            document.getElementById('bl').textContent = e.batchId;
-            document.getElementById('bop').textContent = e.operatorId;
-            document.getElementById('bs').textContent = e.supervisorId;
-            document.getElementById('bt').textContent = ft(e.timestamp);
-
-            if (e.status === 'blue') startTimer(30);
-        }
-
-        function startTimer(sec) {
-            clearInterval(ST.ti); ST.ts = Date.now(); const tot = sec * 1000;
-            document.getElementById('tc').style.display = 'block';
-            ST.ti = setInterval(() => {
-                const rem = Math.max(0, tot - (Date.now() - ST.ts));
-                const pct = rem / tot * 100;
-                const s = Math.ceil(rem / 1000);
-                document.getElementById('ts').textContent = s + 's';
-                const tf = document.getElementById('tf');
-                tf.style.width = pct + '%';
-                tf.style.background = pct > 50 ? 'linear-gradient(90deg,#0066FF,var(--a))'
-                    : pct > 25 ? 'linear-gradient(90deg,#FF6B00,var(--y))'
-                        : 'linear-gradient(90deg,#8B0000,var(--r))';
-                if (rem <= 0) clearInterval(ST.ti);
-            }, 200);
-        }
-
-        function render() {
-            const feed = document.getElementById('af');
-            const list = ST.filter === 'all' ? ST.events : ST.events.filter(e => e.status === ST.filter);
-            if (!list.length) {
-                feed.innerHTML = '<div class="emp2"><div style="font-size:40px;opacity:.3">🔍</div><div>Sin eventos para este filtro</div></div>';
-                return;
-            }
-            feed.innerHTML = list.slice(0, 150).map(e => `
-                    <div class="ae">
-                      <div class="estr ${e.status}"></div>
-                      <div class="et">${ft(e.timestamp)}</div>
-                      <div class="eb">
-                        <div class="etit" style="color:${gc(e.status)}">${e.title}</div>
-                        <div class="emeta">
-                          <span class="bat">${e.batchId}</span>
-                          <span class="sup">${e.supervisorId}</span>
-                          <span>${e.operatorId}</span>
-                        </div>
-                      </div>
-                      <div class="ebadge ${e.status}">${gl(e.status)}</div>
-                    </div>`).join('');
-        }
-
-        function fil(f, btn) {
-            ST.filter = f;
-            document.querySelectorAll('.fb').forEach(b => b.classList.remove('on'));
-            btn.classList.add('on');
-            render();
-        }
-
-        function ft(iso) { return new Date(iso).toLocaleTimeString('es-MX', { hour12: false }); }
-        function gc(s) { return { green: 'var(--g)', yellow: 'var(--y)', red: 'var(--r)', blue: 'var(--a)' }[s] || 'var(--t)'; }
-        function gl(s) { return { green: 'OK', yellow: 'EXPIRADO', red: 'FRAUDE', blue: 'PENDIENTE' }[s] || s; }
-
-        function showFraud(e) {
-            document.getElementById('fdesc').textContent = e.message || '';
-            document.getElementById('fasup').textContent = e.supervisorId || '—';
-            document.getElementById('fabat').textContent = e.batchId || '—';
-            document.getElementById('fatim').textContent = new Date(e.timestamp || Date.now()).toLocaleString('es-MX');
-            document.getElementById('fo').classList.add('vis');
-        }
-
-        // ── Registro del Service Worker para PWA (opcional pero recomendado) ──
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(reg => console.log('✅ Service Worker registrado:', reg))
-                .catch(err => console.error('❌ Error al registrar SW:', err));
-        }
+        startConnection();
     </script>
 </body>
 </html>
