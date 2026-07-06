@@ -15,7 +15,7 @@ public partial class LoginViewModel : BaseViewModel
 
     [ObservableProperty] private string _employeeNumber = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
-    [ObservableProperty] private string _serverUrl = "http://192.168.123.155:5001";
+    [ObservableProperty] private string _serverUrl = "http://192.168.123.155:5002";
     [ObservableProperty] private bool _showServerConfig;
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool _hasError;
@@ -23,7 +23,7 @@ public partial class LoginViewModel : BaseViewModel
     public LoginViewModel(ATUApiClient apiClient)
     {
         _apiClient = apiClient;
-        _serverUrl = Preferences.Get("SERVER_URL", "http://192.168.123.155:5001");
+        _serverUrl = Preferences.Get("SERVER_URL", "http://192.168.123.155:5002");
     }
 
     [RelayCommand]

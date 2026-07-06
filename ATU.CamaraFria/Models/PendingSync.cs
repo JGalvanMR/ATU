@@ -10,7 +10,7 @@ public class PendingSync
     public int Id { get; set; }
     public SyncType Type { get; set; }
     public string Payload { get; set; } = string.Empty; // JSON serializado
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
     public int RetryCount { get; set; }
     public SyncStatus Status { get; set; } = SyncStatus.Pending;
     public string? ErrorMessage { get; set; }

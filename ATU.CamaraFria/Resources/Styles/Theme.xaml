@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    ════════════════════════════════════════════════════════════════════════
+    THEME.XAML — Paleta Light/Dark como recursos planos.
+
+    IMPORTANTE: <Color> en MAUI NO tiene [ContentProperty], así que NO se
+    puede hacer  <Color x:Key="X"><AppThemeBinding/></Color>.  Eso provoca
+    XC0065.
+
+    En su lugar, declaramos cada color DOS veces (variante Dark + variante
+    Light) y elegimos entre ambos en el consumidor con AppThemeBinding,
+    sea en un Setter de Style o directamente en la propiedad de la página.
+
+        BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                          Dark={StaticResource ColorSurface}}"
+
+    Cada par tiene nombres pareados terminados en "Light" para la variante
+    clara. Si el color es idéntico en los dos temas (p. ej. el rojo de
+    error), ambas claves apuntan al mismo valor; no pasa nada.
+
+    Cuando el sistema cambia la apariencia, MAUI re-evalúa todos los
+    AppThemeBinding en vivo: no hace falta reiniciar la app.
+    ════════════════════════════════════════════════════════════════════════-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--  ═══════════════ BACKGROUND / SURFACE ═══════════════  -->
+    <Color x:Key="ColorBackground">#070B18</Color>
+    <Color x:Key="ColorBackgroundLight">#F2F2F7</Color>
+
+    <Color x:Key="ColorSurface">#0F1724</Color>
+    <Color x:Key="ColorSurfaceLight">#FFFFFF</Color>
+
+    <Color x:Key="ColorSurfaceSoft">#0A1120</Color>
+    <Color x:Key="ColorSurfaceSoftLight">#F9F9FB</Color>
+
+    <Color x:Key="ColorSurfaceInput">#0A1120</Color>
+    <Color x:Key="ColorSurfaceInputLight">#FFFFFF</Color>
+
+    <Color x:Key="ColorBottomBar">#0A0E1A</Color>
+    <Color x:Key="ColorBottomBarLight">#E5E5EA</Color>
+
+    <!--  ═══════════════ BRAND / STATUS ═══════════════  -->
+    <Color x:Key="ColorPrimary">#0A84FF</Color>
+    <Color x:Key="ColorPrimaryLight">#007AFF</Color>
+
+    <Color x:Key="ColorSuccess">#30D158</Color>
+    <Color x:Key="ColorSuccessLight">#34C759</Color>
+
+    <Color x:Key="ColorWarning">#FF9F0A</Color>
+    <Color x:Key="ColorWarningLight">#FF9500</Color>
+
+    <Color x:Key="ColorError">#FF453A</Color>
+    <Color x:Key="ColorErrorLight">#FF3B30</Color>
+
+    <!--  ═══════════════ TEXT ═══════════════  -->
+    <Color x:Key="ColorTextPrimary">#FFFFFF</Color>
+    <Color x:Key="ColorTextPrimaryLight">#1C1C1E</Color>
+
+    <Color x:Key="ColorTextSecondary">#8CA0C0</Color>
+    <Color x:Key="ColorTextSecondaryLight">#6C6C70</Color>
+
+    <Color x:Key="ColorTextMuted">#4A6080</Color>
+    <Color x:Key="ColorTextMutedLight">#A0A0A5</Color>
+
+    <Color x:Key="ColorPlaceholder">#4A6080</Color>
+    <Color x:Key="ColorPlaceholderLight">#A0A0A5</Color>
+
+    <!--  Texto sobre WarningButton: negro en dark, blanco en light  -->
+    <Color x:Key="ColorTextOnWarning">#000000</Color>
+    <Color x:Key="ColorTextOnWarningLight">#FFFFFF</Color>
+
+    <!--  ═══════════════ BORDES ═══════════════  -->
+    <Color x:Key="ColorBorderDefault">#1E3A5F</Color>
+    <Color x:Key="ColorBorderDefaultLight">#E5E5EA</Color>
+
+    <Color x:Key="ColorBorderInput">#2A4A70</Color>
+    <Color x:Key="ColorBorderInputLight">#C6C6C8</Color>
+
+    <!--  ═══════════════ TINTED BACKGROUNDS ═══════════════  -->
+    <Color x:Key="ColorSurfaceSuccess">#0A1A0A</Color>
+    <Color x:Key="ColorSurfaceSuccessLight">#E8F8EC</Color>
+
+    <Color x:Key="ColorSurfaceDanger">#2A0A0A</Color>
+    <Color x:Key="ColorSurfaceDangerLight">#FFEAEA</Color>
+
+    <Color x:Key="ColorSurfaceDangerSoft">#2A0A10</Color>
+    <Color x:Key="ColorSurfaceDangerSoftLight">#FFEAEA</Color>
+
+    <Color x:Key="ColorSurfaceWarningSoft">#0F1724</Color>
+    <Color x:Key="ColorSurfaceWarningSoftLight">#FFF4E5</Color>
+
+    <!--  SwipeView.RightItems "Ignorar" — usaba un color literal que solo aplicaba al dark  -->
+    <Color x:Key="ColorSwipeDanger">#2A0A10</Color>
+    <Color x:Key="ColorSwipeDangerLight">#FFEAEA</Color>
+
+    <!--  ═══════════════ ALIAS LEGACY (compatibilidad con código previo) ═══════════════  -->
+    <Color x:Key="Primary">#0A84FF</Color>
+    <Color x:Key="BackgroundDark">#070B18</Color>
+
+    <!--
+        ═══════════════ BRUSHES (no usan AppThemeBinding internamente; se
+        prefieren para Stroke/Background donde Setter/Style los necesite) ═══════════════
+    -->
+    <SolidColorBrush x:Key="BrushPrimary" Color="{StaticResource ColorPrimary}" />
+    <SolidColorBrush x:Key="BrushSuccess" Color="{StaticResource ColorSuccess}" />
+    <SolidColorBrush x:Key="BrushWarning" Color="{StaticResource ColorWarning}" />
+    <SolidColorBrush x:Key="BrushError" Color="{StaticResource ColorError}" />
+    <SolidColorBrush x:Key="BrushBorderDefault" Color="{StaticResource ColorBorderDefault}" />
+    <SolidColorBrush x:Key="BrushBorderInput" Color="{StaticResource ColorBorderInput}" />
+    <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
+
+</ResourceDictionary>

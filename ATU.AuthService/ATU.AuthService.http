@@ -1,4 +1,4 @@
-@ATU.AuthService_HostAddress = http://localhost:5001
+@ATU.AuthService_HostAddress = http://localhost:5002
 
 GET {{ATU.AuthService_HostAddress}}/weatherforecast/
 Accept: application/json

@@ -20,7 +20,7 @@ public static class ATUCore
         string supervisorId,
         DateTimeOffset? at = null)
     {
-        var window = GetTimeWindow(at ?? DateTimeOffset.UtcNow);
+        var window = GetTimeWindow(at ?? DateTimeOffset.Now);
         return ComputeOTP(deviceSecret, batchId, supervisorId, window);
     }
 
@@ -37,7 +37,7 @@ public static class ATUCore
         DateTimeOffset? at = null)
     {
         var batchId = BuildBatchId(productoClave, recibo, tarima);
-        var window = GetTimeWindow(at ?? DateTimeOffset.UtcNow);
+        var window = GetTimeWindow(at ?? DateTimeOffset.Now);
         return ComputeOTP(deviceSecret, batchId, supervisorId, window);
     }
 
@@ -51,12 +51,12 @@ public static class ATUCore
         string supervisorId)
     {
         // 🔴 Fraude por sustitución de lote
-        if (!string.Equals(claimedBatchId.Trim(), actualBatchId.Trim(),StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(claimedBatchId.Trim(), actualBatchId.Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            return new ATUValidationResult(ATUStatus.Red,$"FRAUDE: OTP de '{claimedBatchId}' usado en '{actualBatchId}'.",false,claimedBatchId,actualBatchId);
+            return new ATUValidationResult(ATUStatus.Red, $"FRAUDE: OTP de '{claimedBatchId}' usado en '{actualBatchId}'.", false, claimedBatchId, actualBatchId);
         }
 
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.Now;
         var currentWindow = GetTimeWindow(now);
 
         // Ventana actual (0–30 s)
@@ -67,9 +67,9 @@ public static class ATUCore
         // Ventana anterior (30–60 s) → amarillo
         var prevExpected = ComputeOTP(deviceSecret, claimedBatchId, supervisorId, currentWindow - 1);
         if (CryptographicEquals(candidateOtp, prevExpected))
-            return new ATUValidationResult(ATUStatus.Yellow,"OTP expirado (>30 s). Solicite un nuevo código.",false, claimedBatchId, actualBatchId);
+            return new ATUValidationResult(ATUStatus.Yellow, "OTP expirado (>30 s). Solicite un nuevo código.", false, claimedBatchId, actualBatchId);
 
-        return new ATUValidationResult(ATUStatus.Red,"OTP inválido.",false, null, actualBatchId);
+        return new ATUValidationResult(ATUStatus.Red, "OTP inválido.", false, null, actualBatchId);
     }
 
     // ── Validación simple (sin check FIFO, compatible con tests) ────────────
@@ -85,7 +85,7 @@ public static class ATUCore
     // ── Utilidades ───────────────────────────────────────────────────────────
 
     public static string BuildBatchId(string prodClave, string recibo, string tarima)
-        => $"{prodClave.Trim()}-{recibo.Trim()}-{tarima.Trim()}";
+        => $"{recibo.Trim()}-{prodClave.Trim()}-{tarima.Trim()}";
 
     public static long GetTimeWindow(DateTimeOffset time)
         => time.ToUnixTimeSeconds() / TimeStepSeconds;

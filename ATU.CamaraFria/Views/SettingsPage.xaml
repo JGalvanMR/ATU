@@ -6,9 +6,10 @@
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     Title="Configuración"
     Padding="{OnPlatform iOS='0,48,0,0',
-                         Default='0,12,0,0'}"
+                         Default='0,12,0,12'}"
     ios:Page.UseSafeArea="True"
-    BackgroundColor="#070B18">
+    BackgroundColor="{AppThemeBinding Light={StaticResource ColorBackgroundLight},
+                                      Dark={StaticResource ColorBackground}}">
 
     <ScrollView>
         <VerticalStackLayout Padding="10" Spacing="11">
@@ -18,11 +19,13 @@
                 FontAttributes="Bold"
                 FontSize="13"
                 Text="SESIÓN ACTIVA"
-                TextColor="#8CA0C0" />
+                TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                            Dark={StaticResource ColorTextSecondary}}" />
 
             <Border
                 Padding="18"
-                BackgroundColor="#0F1724"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                  Dark={StaticResource ColorSurface}}"
                 StrokeShape="RoundRectangle 18"
                 StrokeThickness="0">
 
@@ -38,13 +41,83 @@
                             x:Name="LblNombre"
                             FontAttributes="Bold"
                             FontSize="19"
-                            TextColor="#FFFFFF" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
                         <Label
                             x:Name="LblEmpleado"
                             FontSize="15"
-                            TextColor="#8CA0C0" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                        Dark={StaticResource ColorTextSecondary}}" />
                     </VerticalStackLayout>
                 </Grid>
+            </Border>
+
+            <!--  APARIENCIA — NUEVO  -->
+            <Label
+                FontAttributes="Bold"
+                FontSize="13"
+                Text="APARIENCIA"
+                TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                            Dark={StaticResource ColorTextSecondary}}" />
+
+            <Border
+                Padding="18"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                  Dark={StaticResource ColorSurface}}"
+                StrokeShape="RoundRectangle 18"
+                StrokeThickness="0">
+
+                <VerticalStackLayout Spacing="14">
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="15"
+                                Text="Seguir al sistema"
+                                TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                            Dark={StaticResource ColorTextPrimary}}" />
+                            <Label
+                                FontSize="12"
+                                Text="Cambia automáticamente con iOS / Android"
+                                TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                            Dark={StaticResource ColorTextSecondary}}" />
+                        </VerticalStackLayout>
+                        <Switch
+                            x:Name="SwitchFollowSystem"
+                            Grid.Column="1"
+                            IsToggled="True"
+                            OnColor="{AppThemeBinding Light={StaticResource ColorSuccessLight},
+                                                      Dark={StaticResource ColorSuccess}}"
+                            Toggled="OnFollowSystemToggled" />
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight}, Dark={StaticResource ColorBorderDefault}}" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="15"
+                                Text="Modo oscuro"
+                                TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                            Dark={StaticResource ColorTextPrimary}}" />
+                            <Label
+                                x:Name="LblModoDescripcion"
+                                FontSize="12"
+                                Text="Activo"
+                                TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                            Dark={StaticResource ColorTextSecondary}}" />
+                        </VerticalStackLayout>
+                        <Switch
+                            x:Name="SwitchDarkMode"
+                            Grid.Column="1"
+                            OnColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                      Dark={StaticResource ColorPrimary}}"
+                            Toggled="OnDarkModeToggled" />
+                    </Grid>
+
+                </VerticalStackLayout>
             </Border>
 
             <!--  SERVIDOR  -->
@@ -53,11 +126,13 @@
                 FontSize="13"
                 IsVisible="False"
                 Text="SERVIDOR ATU"
-                TextColor="#8CA0C0" />
+                TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                            Dark={StaticResource ColorTextSecondary}}" />
 
             <Border
                 Padding="18"
-                BackgroundColor="#0F1724"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                  Dark={StaticResource ColorSurface}}"
                 IsVisible="False"
                 StrokeShape="RoundRectangle 18"
                 StrokeThickness="0">
@@ -68,13 +143,15 @@
                         FontAttributes="Bold"
                         FontSize="15"
                         Text="URL del servidor"
-                        TextColor="#FFFFFF" />
+                        TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                    Dark={StaticResource ColorTextPrimary}}" />
 
-                    <!--  INPUT estilo iOS  -->
                     <Border
                         Padding="14"
-                        BackgroundColor="#0A1120"
-                        Stroke="#2A4A70"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceInputLight},
+                                                          Dark={StaticResource ColorSurfaceInput}}"
+                        Stroke="{AppThemeBinding Light={StaticResource ColorBorderInputLight},
+                                                 Dark={StaticResource ColorBorderInput}}"
                         StrokeShape="RoundRectangle 12"
                         StrokeThickness="1">
 
@@ -83,18 +160,20 @@
                             FontSize="16"
                             HeightRequest="44"
                             Keyboard="Url"
-                            Placeholder="http://192.168.x.x:5001"
-                            PlaceholderColor="#4A6080"
-                            TextColor="#FFFFFF" />
+                            Placeholder="http://192.168.x.x:5002"
+                            PlaceholderColor="{AppThemeBinding Light={StaticResource ColorPlaceholderLight},
+                                                               Dark={StaticResource ColorPlaceholder}}"
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
                     </Border>
 
-                    <!--  BOTONES  -->
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
 
                         <Button
                             Grid.Column="0"
                             Padding="0"
-                            BackgroundColor="#0A84FF"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                              Dark={StaticResource ColorPrimary}}"
                             Clicked="OnGuardarUrl"
                             CornerRadius="14"
                             FontAttributes="Bold"
@@ -104,7 +183,8 @@
                             TextColor="#FFFFFF">
                             <Button.Shadow>
                                 <Shadow
-                                    Brush="#0A84FF"
+                                    Brush="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                            Dark={StaticResource ColorPrimary}}"
                                     Opacity="0.30"
                                     Radius="8"
                                     Offset="0,3" />
@@ -114,13 +194,15 @@
                         <Button
                             Grid.Column="1"
                             Padding="0"
-                            BackgroundColor="#1E3A5F"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight},
+                                                              Dark={StaticResource ColorBorderDefault}}"
                             Clicked="OnProbarConexion"
                             CornerRadius="14"
                             FontSize="16"
                             HeightRequest="52"
                             Text="Probar"
-                            TextColor="#FFFFFF" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
 
                     </Grid>
 
@@ -129,7 +211,8 @@
                         FontAttributes="Bold"
                         FontSize="15"
                         HorizontalOptions="Center"
-                        TextColor="#8CA0C0" />
+                        TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                    Dark={StaticResource ColorTextSecondary}}" />
 
                 </VerticalStackLayout>
             </Border>
@@ -139,33 +222,36 @@
                 FontAttributes="Bold"
                 FontSize="13"
                 Text="DISPOSITIVO"
-                TextColor="#8CA0C0" />
+                TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                            Dark={StaticResource ColorTextSecondary}}" />
 
             <Border
                 Padding="18"
-                BackgroundColor="#0F1724"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                  Dark={StaticResource ColorSurface}}"
                 StrokeShape="RoundRectangle 18"
                 StrokeThickness="0">
 
                 <VerticalStackLayout Spacing="12">
 
-                    <!--  FILAS tipo iOS  -->
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Label
                             Grid.Column="0"
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Modelo"
-                            TextColor="#8CA0C0" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                        Dark={StaticResource ColorTextSecondary}}" />
                         <Label
                             x:Name="LblModelo"
                             Grid.Column="1"
                             FontAttributes="Bold"
                             FontSize="15"
-                            TextColor="#FFFFFF" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
                     </Grid>
 
-                    <BoxView HeightRequest="1" Color="#1E3A5F" />
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight}, Dark={StaticResource ColorBorderDefault}}" />
 
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Label
@@ -173,16 +259,18 @@
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Android"
-                            TextColor="#8CA0C0" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                        Dark={StaticResource ColorTextSecondary}}" />
                         <Label
                             x:Name="LblAndroid"
                             Grid.Column="1"
                             FontAttributes="Bold"
                             FontSize="15"
-                            TextColor="#FFFFFF" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
                     </Grid>
 
-                    <BoxView HeightRequest="1" Color="#1E3A5F" />
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight}, Dark={StaticResource ColorBorderDefault}}" />
 
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                         <Label
@@ -190,13 +278,15 @@
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Device ID"
-                            TextColor="#8CA0C0" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                        Dark={StaticResource ColorTextSecondary}}" />
                         <Label
                             x:Name="LblDeviceId"
                             Grid.Column="1"
                             FontSize="13"
                             LineBreakMode="CharacterWrap"
-                            TextColor="#FFFFFF" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
                     </Grid>
 
                 </VerticalStackLayout>
@@ -206,14 +296,16 @@
             <Button
                 Margin="0,12,0,0"
                 Padding="0"
-                BackgroundColor="#2A0A10"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceDangerSoftLight},
+                                                  Dark={StaticResource ColorSurfaceDangerSoft}}"
                 Clicked="OnCerrarSesion"
                 CornerRadius="16"
                 FontAttributes="Bold"
                 FontSize="17"
                 HeightRequest="56"
                 Text="Cerrar Sesión"
-                TextColor="#FF453A" />
+                TextColor="{AppThemeBinding Light={StaticResource ColorErrorLight},
+                                            Dark={StaticResource ColorError}}" />
 
             <!--  VERSION  -->
             <Label
@@ -221,7 +313,8 @@
                 FontSize="12"
                 HorizontalOptions="Center"
                 Text="ATU Cámara Fría v1.0 · mrlucky"
-                TextColor="#4A6080" />
+                TextColor="{AppThemeBinding Light={StaticResource ColorTextMutedLight},
+                                            Dark={StaticResource ColorTextMuted}}" />
 
         </VerticalStackLayout>
     </ScrollView>

@@ -47,7 +47,7 @@ app.UseAuthorization();
 // Mapear AuditHub para que IHubContext<AuditHub> funcione en OTPController
 app.MapHub<AuditHub>("/audit-hub");
 app.MapControllers();
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.Now }));
 
 app.Run();
 

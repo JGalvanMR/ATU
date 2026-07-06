@@ -71,7 +71,7 @@ public class AuthController : ControllerBase
                     PushToken = string.Empty,
                     ColdStorageZoneId = string.Empty,
                     IsActive = true,
-                    EnrolledAt = DateTimeOffset.UtcNow
+                    EnrolledAt = DateTimeOffset.Now
                 });
             }
             else if (!string.IsNullOrEmpty(req.DeviceFingerprint)
@@ -99,7 +99,7 @@ public class AuthController : ControllerBase
                     supervisorId = req.EmployeeNumber.Trim(),
                     supervisorName = nombre,
                     role = "SupervisorCamaras",
-                    expiresAt = DateTime.UtcNow.AddHours(8),
+                    expiresAt = DateTime.Now.AddHours(8),
                     requiresBiometricEnrollment = false,
                     isDeviceEnrolled = true
                 },

@@ -105,7 +105,7 @@ public class SyncQueueService
             foreach (var item in pending)
             {
                 item.Status = SyncStatus.InProgress;
-                item.LastAttemptAt = DateTime.UtcNow;
+                item.LastAttemptAt = DateTime.Now;
                 await _db.SaveChangesAsync();
 
                 try
@@ -115,7 +115,7 @@ public class SyncQueueService
                     if (success)
                     {
                         item.Status = SyncStatus.Completed;
-                        item.SyncedAt = DateTime.UtcNow;
+                        item.SyncedAt = DateTime.Now;
                         processed++;
                     }
                     else
@@ -139,7 +139,7 @@ public class SyncQueueService
             }
 
             var oldCompleted = await _db.PendingSyncs
-                .Where(p => p.Status == SyncStatus.Completed && p.SyncedAt < DateTime.UtcNow.AddDays(-7))
+                .Where(p => p.Status == SyncStatus.Completed && p.SyncedAt < DateTime.Now.AddDays(-7))
                 .ToListAsync();
 
             if (oldCompleted.Any())

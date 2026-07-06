@@ -59,6 +59,9 @@ public class ValidationResponse
 public class GenerateOtpFolioRequest
 {
     public string EmbFolio { get; set; } = string.Empty;
+    public string ReciboCap { get; set; } = string.Empty;
+    public string ProdClave { get; set; } = string.Empty;
+    public string TarimaCap { get; set; } = string.Empty;
     public string BatchId { get; set; } = string.Empty;
     public string SupervisorId { get; set; } = string.Empty;
     public string DeviceFingerprint { get; set; } = string.Empty;
@@ -114,7 +117,7 @@ public class ATUApiClient
         _syncQueue = syncQueue;
         _logger = logger;
         _deviceFingerprint = fingerprintService.GetFingerprint();
-        _api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5001"));
+        _api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5002"));
     }
 
     public void SetBaseUrl(string url)
@@ -179,7 +182,7 @@ public class ATUApiClient
 
     // ── Generar OTP para folio adelantado ────────────────────────────────────
 
-    public async Task<OTPResponse?> GenerateOTPForFolioAsync(string embFolio, string supervisorId, string batchId)
+    public async Task<OTPResponse?> GenerateOTPForFolioAsync(string embFolio, string reciboCap, string prodClave, string tarimaCap, string supervisorId, string batchId)
     {
         try
         {
@@ -190,6 +193,9 @@ public class ATUApiClient
             {
                 EmbFolio = embFolio,
                 BatchId = batchId,
+                ReciboCap = reciboCap,
+                ProdClave = prodClave,
+                TarimaCap = tarimaCap,
                 SupervisorId = supervisorId,
                 DeviceFingerprint = _deviceFingerprint
             });

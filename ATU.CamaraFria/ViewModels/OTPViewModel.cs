@@ -42,6 +42,9 @@ public partial class OTPViewModel : BaseViewModel
     [ObservableProperty] private string _infoSolicitante = string.Empty;
     [ObservableProperty] private string _motivoSolicitud = string.Empty;
     [ObservableProperty] private bool _esFolioAdelantado;
+    [ObservableProperty] private string _reciboCap = string.Empty;
+    [ObservableProperty] private string _prodClave = string.Empty;
+    [ObservableProperty] private string _tarimaCap = string.Empty;
 
     // ── Panel 3: OTP ─────────────────────────────────────────────────────────
     [ObservableProperty] private string _otpCode = string.Empty;
@@ -64,11 +67,21 @@ public partial class OTPViewModel : BaseViewModel
 
     // ── Llamado desde SolicitudesPage cuando el supervisor toca AUTORIZAR ─────
     public void CargarFolioAdelantado(
-        string embFolio, string prodClave, string reciboSug, string tarimaSug,
-        string producto = "", string responsable = "", string motivo = "")
+        string embFolio,
+        string reciboCap,
+        string prodClave,
+        string tarimaCap,
+        string reciboSug,
+        string tarimaSug,
+        string producto = "",
+        string responsable = "",
+        string motivo = "")
     {
         EmbFolio = embFolio;
-        BatchId = $"{reciboSug.TrimStart('0')}-{prodClave.Trim()}-{tarimaSug.TrimStart('0')}".ToUpper();
+        ReciboCap = reciboCap;
+        ProdClave = prodClave;
+        TarimaCap = tarimaCap;
+        BatchId = $"{reciboCap.TrimStart('0')}-{prodClave.Trim()}-{tarimaCap.TrimStart('0')}".ToUpper();
         InfoProducto = $"{prodClave.Trim()} — {producto.Trim()}";
         InfoSolicitante = responsable.Trim();
         MotivoSolicitud = motivo.Trim();
@@ -301,7 +314,7 @@ public partial class OTPViewModel : BaseViewModel
         IsProcessing = true;
         try
         {
-            var resp = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, _supervisorId, BatchId);
+            var resp = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, ReciboCap, ProdClave, TarimaCap, _supervisorId, BatchId);
             if (resp?.Success == true && resp.Data != null)
             {
                 if (!string.IsNullOrEmpty(resp.Data.BatchId)) BatchId = resp.Data.BatchId;

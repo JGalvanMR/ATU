@@ -100,6 +100,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<MauiXaml Update="Resources\Styles\Theme.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 		<MauiXaml Update="Views\PendingSyncPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>

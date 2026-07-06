@@ -885,19 +885,19 @@
                 return;
             }
             feed.innerHTML = list.slice(0, 150).map(e => `
-                <div class="ae">
-                  <div class="estr ${e.status}"></div>
-                  <div class="et">${ft(e.timestamp)}</div>
-                  <div class="eb">
-                    <div class="etit" style="color:${gc(e.status)}">${e.title}</div>
-                    <div class="emeta">
-                      <span class="bat">${e.batchId}</span>
-                      <span class="sup">${e.supervisorId}</span>
-                      <span>${e.operatorId}</span>
-                    </div>
-                  </div>
-                  <div class="ebadge ${e.status}">${gl(e.status)}</div>
-                </div>`).join('');
+                    <div class="ae">
+                      <div class="estr ${e.status}"></div>
+                      <div class="et">${ft(e.timestamp)}</div>
+                      <div class="eb">
+                        <div class="etit" style="color:${gc(e.status)}">${e.title}</div>
+                        <div class="emeta">
+                          <span class="bat">${e.batchId}</span>
+                          <span class="sup">${e.supervisorId}</span>
+                          <span>${e.operatorId}</span>
+                        </div>
+                      </div>
+                      <div class="ebadge ${e.status}">${gl(e.status)}</div>
+                    </div>`).join('');
         }
 
         function fil(f, btn) {

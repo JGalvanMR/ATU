@@ -11,6 +11,8 @@ public class SolicitudVm
     public string Producto { get; set; } = string.Empty;
     public string ReciboCap { get; set; } = string.Empty;
     public string TarimaCap { get; set; } = string.Empty;
+    public string ReciboSug { get; set; } = string.Empty;
+    public string TarimaSug { get; set; } = string.Empty;
     public string Responsable { get; set; } = string.Empty;
     public string Motivo { get; set; } = string.Empty;
     public DateTime FechaCreacion { get; set; }

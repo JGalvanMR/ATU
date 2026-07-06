@@ -6,10 +6,11 @@
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:viewmodel="clr-namespace:ATU.CamaraFria.ViewModels"
     Padding="{OnPlatform iOS='0,24,0,0',
-                         Default='0,12,0,0'}"
+                         Default='0,12,0,12'}"
     ios:Page.UseSafeArea="True"
     x:DataType="viewmodel:LoginViewModel"
-    BackgroundColor="#070B18">
+    BackgroundColor="{AppThemeBinding Light={StaticResource ColorBackgroundLight},
+                                      Dark={StaticResource ColorBackground}}">
 
     <ScrollView>
         <VerticalStackLayout Padding="24,16" Spacing="24">
@@ -19,8 +20,10 @@
 
                 <Border
                     Padding="11"
-                    BackgroundColor="#0F1724"
-                    Stroke="#1E3A5F"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                      Dark={StaticResource ColorSurface}}"
+                    Stroke="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight},
+                                             Dark={StaticResource ColorBorderDefault}}"
                     StrokeShape="RoundRectangle 44"
                     StrokeThickness="1.5">
                     <Label
@@ -34,20 +37,24 @@
                     FontSize="26"
                     HorizontalOptions="Center"
                     Text="ATU · Cámara Fría"
-                    TextColor="#0A84FF" />
+                    TextColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                Dark={StaticResource ColorPrimary}}" />
 
                 <Label
                     FontSize="15"
                     HorizontalOptions="Center"
                     Text="Autorización Transaccional Única"
-                    TextColor="#8CA0C0" />
+                    TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                Dark={StaticResource ColorTextSecondary}}" />
             </VerticalStackLayout>
 
             <!--  FORM CARD  -->
             <Border
                 Padding="18"
-                BackgroundColor="#0F1724"
-                Stroke="#1E3A5F"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                  Dark={StaticResource ColorSurface}}"
+                Stroke="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight},
+                                         Dark={StaticResource ColorBorderDefault}}"
                 StrokeShape="RoundRectangle 20"
                 StrokeThickness="1.5">
 
@@ -59,12 +66,15 @@
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Número de empleado"
-                            TextColor="#FFFFFF" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
 
                         <Border
                             Padding="14,4"
-                            BackgroundColor="#0A1120"
-                            Stroke="#2A4A70"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceInputLight},
+                                                              Dark={StaticResource ColorSurfaceInput}}"
+                            Stroke="{AppThemeBinding Light={StaticResource ColorBorderInputLight},
+                                                     Dark={StaticResource ColorBorderInput}}"
                             StrokeShape="RoundRectangle 12"
                             StrokeThickness="1">
                             <Entry
@@ -74,14 +84,16 @@
                                 Keyboard="Numeric"
                                 MaxLength="10"
                                 Placeholder="Ej: 12345"
-                                PlaceholderColor="#4A6080"
+                                PlaceholderColor="{AppThemeBinding Light={StaticResource ColorPlaceholderLight},
+                                                                   Dark={StaticResource ColorPlaceholder}}"
                                 Text="{Binding EmployeeNumber}"
-                                TextColor="#FFFFFF"
+                                TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                            Dark={StaticResource ColorTextPrimary}}"
                                 VerticalOptions="Center" />
                         </Border>
                     </VerticalStackLayout>
 
-                    <BoxView HeightRequest="1" Color="#1E3050" />
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight}, Dark={StaticResource ColorBorderDefault}}" />
 
                     <!--  PASSWORD  -->
                     <VerticalStackLayout Spacing="6">
@@ -89,12 +101,15 @@
                             FontAttributes="Bold"
                             FontSize="15"
                             Text="Contraseña"
-                            TextColor="#FFFFFF" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                        Dark={StaticResource ColorTextPrimary}}" />
 
                         <Border
                             Padding="14,4"
-                            BackgroundColor="#0A1120"
-                            Stroke="#2A4A70"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceInputLight},
+                                                              Dark={StaticResource ColorSurfaceInput}}"
+                            Stroke="{AppThemeBinding Light={StaticResource ColorBorderInputLight},
+                                                     Dark={StaticResource ColorBorderInput}}"
                             StrokeShape="RoundRectangle 12"
                             StrokeThickness="1">
                             <Entry
@@ -102,9 +117,11 @@
                                 HeightRequest="48"
                                 IsPassword="True"
                                 Placeholder="Contraseña de autorización"
-                                PlaceholderColor="#4A6080"
+                                PlaceholderColor="{AppThemeBinding Light={StaticResource ColorPlaceholderLight},
+                                                                   Dark={StaticResource ColorPlaceholder}}"
                                 Text="{Binding Password}"
-                                TextColor="#FFFFFF"
+                                TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                            Dark={StaticResource ColorTextPrimary}}"
                                 VerticalOptions="Center" />
                         </Border>
                     </VerticalStackLayout>
@@ -119,7 +136,8 @@
                     FontSize="15"
                     HorizontalOptions="Center"
                     Text="⚙ Configurar servidor"
-                    TextColor="#5A8AC0">
+                    TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                Dark={StaticResource ColorTextSecondary}}">
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding ToggleServerConfigCommand}" />
                     </Label.GestureRecognizers>
@@ -127,9 +145,11 @@
 
                 <Border
                     Padding="14"
-                    BackgroundColor="#0F1724"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                      Dark={StaticResource ColorSurface}}"
                     IsVisible="{Binding ShowServerConfig}"
-                    Stroke="#1E3A5F"
+                    Stroke="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight},
+                                             Dark={StaticResource ColorBorderDefault}}"
                     StrokeShape="RoundRectangle 16"
                     StrokeThickness="1.5">
 
@@ -137,10 +157,12 @@
                         FontSize="16"
                         HeightRequest="44"
                         Keyboard="Url"
-                        Placeholder="http://192.168.x.x:5001"
-                        PlaceholderColor="#4A6080"
+                        Placeholder="http://192.168.x.x:5002"
+                        PlaceholderColor="{AppThemeBinding Light={StaticResource ColorPlaceholderLight},
+                                                           Dark={StaticResource ColorPlaceholder}}"
                         Text="{Binding ServerUrl}"
-                        TextColor="#0A84FF" />
+                        TextColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                    Dark={StaticResource ColorPrimary}}" />
                 </Border>
 
             </VerticalStackLayout>
@@ -148,7 +170,8 @@
             <!--  LOGIN BUTTON  -->
             <Button
                 Padding="0"
-                BackgroundColor="#0A84FF"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                  Dark={StaticResource ColorPrimary}}"
                 Command="{Binding LoginCommand}"
                 CornerRadius="16"
                 FontAttributes="Bold"
@@ -160,7 +183,8 @@
 
                 <Button.Shadow>
                     <Shadow
-                        Brush="#0A84FF"
+                        Brush="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                Dark={StaticResource ColorPrimary}}"
                         Opacity="0.35"
                         Radius="10"
                         Offset="0,4" />
@@ -172,14 +196,17 @@
                 HorizontalOptions="Center"
                 IsRunning="{Binding IsBusy}"
                 IsVisible="{Binding IsBusy}"
-                Color="#0A84FF" />
+                Color="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                        Dark={StaticResource ColorPrimary}}" />
 
             <!--  ERROR  -->
             <Border
                 Padding="14"
-                BackgroundColor="#2A0A0A"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceDangerLight},
+                                                  Dark={StaticResource ColorSurfaceDanger}}"
                 IsVisible="{Binding HasError}"
-                Stroke="#FF453A"
+                Stroke="{AppThemeBinding Light={StaticResource ColorErrorLight},
+                                         Dark={StaticResource ColorError}}"
                 StrokeShape="RoundRectangle 12"
                 StrokeThickness="1.5">
                 <Label
@@ -187,7 +214,8 @@
                     FontSize="15"
                     HorizontalTextAlignment="Center"
                     Text="{Binding ErrorMessage}"
-                    TextColor="#FF453A" />
+                    TextColor="{AppThemeBinding Light={StaticResource ColorErrorLight},
+                                                Dark={StaticResource ColorError}}" />
             </Border>
 
             <!--  FOOTER  -->
@@ -196,7 +224,8 @@
                 FontSize="13"
                 HorizontalOptions="Center"
                 Text="Solo personal autorizado en Tb_Autoriza_OdeP"
-                TextColor="#5A7FA8" />
+                TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                            Dark={StaticResource ColorTextSecondary}}" />
 
         </VerticalStackLayout>
     </ScrollView>
