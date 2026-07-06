@@ -5,28 +5,26 @@ namespace ATU.Shared;
 
 public static class ATUCore
 {
-    // ── Constantes públicas que usan el Controller y los Tests ───────────────
-    public const int TtlSeconds = 30;   // Vida del OTP
-    public const int TimeStepSeconds = 30;   // Ventana TOTP
+    // ── Constantes públicas ─────────────────────────────────────────────────
+    // ✅ CAMBIO 1: Aumentamos el tiempo de vida real a 90 segundos (1.5 min)
+    // Esto da tiempo de que el supervisor lo lea y el operador lo teclee
+    public const int TtlSeconds = 90;
+    public const int TimeStepSeconds = 30;
 
     private const int OtpDigits = 6;
 
-    // ── Overload simplificado (batchId ya construido externamente) ───────────
-    // Firma: (secret, batchId, supervisorId, at?)
-    // Usada por: OTPController y ATUCoreTests
+    // ── Overload simplificado ───────────────────────────────────────────────
     public static string GenerateOTP(
         string deviceSecret,
         string batchId,
         string supervisorId,
         DateTimeOffset? at = null)
     {
-        var window = GetTimeWindow(at ?? DateTimeOffset.Now);
+        var window = GetTimeWindow(at ?? DateTimeOffset.UtcNow);
         return ComputeOTP(deviceSecret, batchId, supervisorId, window);
     }
 
-    // ── Overload completo (construye batchId internamente) ───────────────────
-    // Firma: (secret, prodClave, recibo, tarima, fechaCad, supervisorId, at?)
-    // Usada por: ATUCore.Validate interno
+    // ── Overload completo ───────────────────────────────────────────────────
     public static string GenerateOTP(
         string deviceSecret,
         string productoClave,
@@ -37,42 +35,53 @@ public static class ATUCore
         DateTimeOffset? at = null)
     {
         var batchId = BuildBatchId(productoClave, recibo, tarima);
-        var window = GetTimeWindow(at ?? DateTimeOffset.Now);
+        var window = GetTimeWindow(at ?? DateTimeOffset.UtcNow);
         return ComputeOTP(deviceSecret, batchId, supervisorId, window);
     }
 
-    // ── Validación FIFO-aware ────────────────────────────────────────────────
-    // Verifica: OTP correcto + lote reclamado == lote real (anti-sustitución)
+    // ── Validación FIFO-aware ───────────────────────────────────────────────
     public static ATUValidationResult ValidateFIFO(
         string candidateOtp,
         string deviceSecret,
-        string claimedBatchId,   // batchId del OTP generado
-        string actualBatchId,    // batchId real escaneado por embarques
+        string claimedBatchId,
+        string actualBatchId,
         string supervisorId)
     {
-        // 🔴 Fraude por sustitución de lote
+        // Fraude por sustitución de lote
         if (!string.Equals(claimedBatchId.Trim(), actualBatchId.Trim(), StringComparison.OrdinalIgnoreCase))
         {
             return new ATUValidationResult(ATUStatus.Red, $"FRAUDE: OTP de '{claimedBatchId}' usado en '{actualBatchId}'.", false, claimedBatchId, actualBatchId);
         }
 
-        var now = DateTimeOffset.Now;
+        var now = DateTimeOffset.UtcNow;
         var currentWindow = GetTimeWindow(now);
 
-        // Ventana actual (0–30 s)
+        // ✅ CAMBIO 2: Nueva lógica de ventanas "Warehouse-Friendly"
+
+        // 1. Ventana actual (0–30 s) -> VÁLIDO
         var expected = ComputeOTP(deviceSecret, claimedBatchId, supervisorId, currentWindow);
         if (CryptographicEquals(candidateOtp, expected))
             return new ATUValidationResult(ATUStatus.Green, "Autorización FIFO válida.", true, claimedBatchId, actualBatchId);
 
-        // Ventana anterior (30–60 s) → amarillo
+        // 2. Ventana anterior (30–60 s) -> VÁLIDO (Tolerancia para cruce de segundo)
         var prevExpected = ComputeOTP(deviceSecret, claimedBatchId, supervisorId, currentWindow - 1);
         if (CryptographicEquals(candidateOtp, prevExpected))
-            return new ATUValidationResult(ATUStatus.Yellow, "OTP expirado (>30 s). Solicite un nuevo código.", false, claimedBatchId, actualBatchId);
+            return new ATUValidationResult(ATUStatus.Green, "Autorización FIFO válida.", true, claimedBatchId, actualBatchId);
+
+        // 3. Ventana futura (+30s) -> VÁLIDO (Por si el celular del supervisor va 30s adelantado)
+        var nextExpected = ComputeOTP(deviceSecret, claimedBatchId, supervisorId, currentWindow + 1);
+        if (CryptographicEquals(candidateOtp, nextExpected))
+            return new ATUValidationResult(ATUStatus.Green, "Autorización FIFO válida.", true, claimedBatchId, actualBatchId);
+
+        // 4. Ventana lejana (-60 a -90 s) -> AMARILLO (Expirado pero reciente)
+        var oldExpected = ComputeOTP(deviceSecret, claimedBatchId, supervisorId, currentWindow - 2);
+        if (CryptographicEquals(candidateOtp, oldExpected))
+            return new ATUValidationResult(ATUStatus.Yellow, "OTP expirado (>60 s). Solicite un nuevo código.", false, claimedBatchId, actualBatchId);
 
         return new ATUValidationResult(ATUStatus.Red, "OTP inválido.", false, null, actualBatchId);
     }
 
-    // ── Validación simple (sin check FIFO, compatible con tests) ────────────
+    // ── Validación simple ───────────────────────────────────────────────────
     public static ATUValidationResult ValidateOTP(
         string candidateOtp,
         string deviceSecret,
@@ -108,7 +117,6 @@ public static class ATUCore
         return (code % 1_000_000).ToString().PadLeft(OtpDigits, '0');
     }
 
-    // Alias para los tests existentes
     public static byte[] ComputeHMAC(string secret, long window, string batchId, string supervisorId)
     {
         var message = $"{batchId.ToUpperInvariant()}|{supervisorId.ToUpperInvariant()}|{window}";
@@ -123,16 +131,11 @@ public static class ATUCore
         return CryptographicOperations.FixedTimeEquals(aBytes, bBytes);
     }
 
-    // Alias para los tests que llaman FixedTimeEquals directamente
     public static bool FixedTimeEquals(string a, string b)
         => CryptographicEquals(a, b);
 
-    // Para el test de ReplayAttack que llama ResetReplayCache
-    // (el replay se controla en DB, no en memoria; este método es no-op)
     public static void ResetReplayCache() { }
 }
-
-// ── Tipos de resultado ───────────────────────────────────────────────────────
 
 public record ATUValidationResult(
     ATUStatus Status,
@@ -143,7 +146,6 @@ public record ATUValidationResult(
 
 public enum ATUStatus { Green, Yellow, Red }
 
-// Alias de resultado para compatibilidad con tests
 public class OtpValidationResult
 {
     public bool IsValid { get; init; }
