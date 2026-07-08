@@ -662,7 +662,7 @@ public class OTPController : ControllerBase
     // Helpers privados
     // ═══════════════════════════════════════════════════════════════════════
 
-    private async Task EmitirAuditEvent(string status, string title, string batchId,
+    private async Task EmitirAuditEvents(string status, string title, string batchId,
         string supervisorId, string operatorId, string message, bool isFraud = false)
     {
         try
@@ -681,6 +681,30 @@ public class OTPController : ControllerBase
             });
         }
         catch { /* No interrumpir el flujo si SignalR falla */ }
+    }
+    private async Task EmitirAuditEvent(string status, string title, string batchId,
+    string supervisorId, string operatorId, string message, bool isFraud = false)
+    {
+        try
+        {
+            await _auditHub.Clients.All.SendAsync("AuditEvent", new
+            {
+                status,
+                title,
+                batchId,
+                supervisorId,
+                operatorId,
+                message,
+                isFraud,
+                timestamp = DateTime.UtcNow,
+                eventId = Guid.NewGuid()
+            });
+        }
+        catch (Exception ex)
+        {
+            // ✅ NUEVO: Imprimir el error en la consola del AuthService
+            Console.WriteLine($"⚠️ ERROR DE SIGNALR: {ex.Message}");
+        }
     }
 
     private static async Task InsertAudit(SqlConnection conn, string embFolio, string evento,

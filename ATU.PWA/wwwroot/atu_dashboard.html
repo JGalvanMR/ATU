@@ -75,14 +75,14 @@
 
     <script>
         // ⚠️ CAMBIA ESTA URL AL PUERTO DONDE CORRE TU ATU.AuthService ⚠️
-        const AUTH_SERVICE_URL = "http://localhost:5000/audit-hub";
+        const AUTH_SERVICE_URL = "/audit-hub";
 
         const statusDiv = document.getElementById("connection-status");
         const container = document.getElementById("events-container");
 
         // Construir la conexión
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(AUTH_SERVICE_URL)
+            .withUrl(AUTH_SERVICE_URL, { withCredentials: false })
             .withAutomaticReconnect([0, 2000, 5000, 10000, 30000]) // Reintenta si se cae
             .configureLogging(signalR.LogLevel.Information)
             .build();
@@ -96,14 +96,14 @@
             const fraudWarning = event.isFraud ? '<div style="color:red; font-weight:bold; margin-top:10px;">🚨 ¡ALERTA DE FRAUDE DETECTADA!🚨</div>' : '';
 
             card.innerHTML = `
-                <div><span class="status-badge" style="color: ${event.status === 'red' ? 'red' : event.status === 'green' ? 'green' : 'orange'}">${event.status}</span> - <strong>${time}</strong></div>
-                <h3 style="margin: 5px 0;">${event.title}</h3>
-                <p style="margin: 5px 0; color: #555;">${event.message}</p>
-                <div style="font-size: 12px; color: #888;">
-                    Lote: ${event.batchId || 'N/A'} | Supervisor: ${event.supervisorId || 'N/A'} | Operador: ${event.operatorId || 'N/A'}
-                </div>
-                ${fraudWarning}
-            `;
+                    <div><span class="status-badge" style="color: ${event.status === 'red' ? 'red' : event.status === 'green' ? 'green' : 'orange'}">${event.status}</span> - <strong>${time}</strong></div>
+                    <h3 style="margin: 5px 0;">${event.title}</h3>
+                    <p style="margin: 5px 0; color: #555;">${event.message}</p>
+                    <div style="font-size: 12px; color: #888;">
+                        Lote: ${event.batchId || 'N/A'} | Supervisor: ${event.supervisorId || 'N/A'} | Operador: ${event.operatorId || 'N/A'}
+                    </div>
+                    ${fraudWarning}
+                `;
 
             // Insertar el nuevo evento arriba del todo
             container.prepend(card);

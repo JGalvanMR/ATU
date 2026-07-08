@@ -25,12 +25,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<IZoneRepository, ZoneRepository>();
 builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 builder.Services.AddSingleton<IOtpRepository, InMemoryOtpRepository>();
-builder.Services.AddSingleton<IDeviceRepository, InMemoryDeviceRepository>();
+
+// ✅ CORRECCIÓN: Eliminado InMemoryDeviceRepository. Solo usamos SQL.
+builder.Services.AddSingleton<IDeviceRepository, SqlDeviceRepository>();
+
 builder.Services.AddSingleton<IAuditEventPublisher, InMemoryAuditPublisher>();
 builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
-
-// SQL Server para dispositivos (persiste entre reinicios)
-builder.Services.AddSingleton<IDeviceRepository, SqlDeviceRepository>();
 
 // ── App ───────────────────────────────────────────────────────────────────────
 var app = builder.Build();
@@ -41,13 +41,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// El orden importa: CORS debe ir antes que los Hubs y Controladores
 app.UseCors("AllowAll");
 app.UseAuthorization();
 
 // Mapear AuditHub para que IHubContext<AuditHub> funcione en OTPController
+// y para que la PWA se conecte a http://localhost:5000/audit-hub
 app.MapHub<AuditHub>("/audit-hub");
 app.MapControllers();
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.Now }));
+
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
 
 app.Run();
 
@@ -57,7 +60,10 @@ public class InMemoryAuditPublisher : IAuditEventPublisher
 {
     public Task PublishAsync(AuditEvent evt)
     {
-        Console.WriteLine($"[AUDIT] {evt.Type}: {evt.BatchId} — {evt.Message}");
+        // Esto solo escribe en la consola del servidor donde corre AuthService.
+        // Los eventos en tiempo real hacia la PWA los manda directamente 
+        // el OTPController usando IHubContext<AuditHub>.
+        Console.WriteLine($"[AUDIT DB LOG] {evt.Type}: {evt.BatchId} — {evt.Message}");
         return Task.CompletedTask;
     }
 }
