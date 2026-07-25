@@ -59,3 +59,23 @@ public class ValidateOtpFolioRequest
     public string ClaimedReciboSug { get; set; } = string.Empty;
     public int ClaimedTarimaSug { get; set; }
 }
+
+
+// --- Agregar al final de FolioModels.cs ---
+
+public class AuthorizeFolioRequest
+{
+    public string SupervisorId { get; set; } = string.Empty;
+    public string EmbFolio { get; set; } = string.Empty;
+    public string BatchId { get; set; } = string.Empty; // opcional
+    public string DeviceFingerprint { get; set; } = string.Empty;
+    public string Comments { get; set; } = string.Empty;
+}
+
+public class AuthorizeFolioResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string AuthorizationId { get; set; } = string.Empty;
+    public DateTime AuthorizedAt { get; set; }
+}

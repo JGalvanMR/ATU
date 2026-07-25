@@ -81,8 +81,6 @@
                                 FontAttributes="Bold"
                                 FontSize="20"
                                 HeightRequest="48"
-                                Keyboard="Numeric"
-                                MaxLength="10"
                                 Placeholder="Ej: 12345"
                                 PlaceholderColor="{AppThemeBinding Light={StaticResource ColorPlaceholderLight},
                                                                    Dark={StaticResource ColorPlaceholder}}"

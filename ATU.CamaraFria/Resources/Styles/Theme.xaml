@@ -109,4 +109,9 @@
     <SolidColorBrush x:Key="BrushBorderInput" Color="{StaticResource ColorBorderInput}" />
     <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
 
+
+
+    <Color x:Key="ColorTextOnSuccessLight">#ffffff</Color>
+    <Color x:Key="ColorTextOnSuccess">#ffffff</Color>
+
 </ResourceDictionary>

@@ -657,6 +657,92 @@ public class OTPController : ControllerBase
         });
     }
 
+    [HttpPost("authorize-folio")]
+    public async Task<IActionResult> AuthorizeFolio([FromBody] AuthorizeFolioRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(_connStr))
+            return Ok(new { success = false, message = "SQL Server no configurado." });
+
+        await using var conn = new SqlConnection(_connStr);
+
+        try
+        {
+            // 1. Validar que el supervisor esté autorizado en Tb_Autoriza_OdeP
+            var esAutorizado = await conn.ExecuteScalarAsync<int>(@"
+            SELECT COUNT(1) FROM Tb_Autoriza_OdeP
+            WHERE LTRIM(RTRIM(usuario)) = @u AND LTRIM(RTRIM(clave)) = 'EM'",
+                new { u = request.SupervisorId.Trim() });
+
+            if (esAutorizado == 0)
+                return Ok(new { success = false, message = "Supervisor no autorizado en el sistema." });
+
+            // 2. Obtener el folio pendiente
+            var folio = await conn.QueryFirstOrDefaultAsync<dynamic>(@"
+            SELECT emb_folio, prod_clave, recibo_cap, tarimacap, recibo_sug, tarimasug, 
+                   producto, otp_status
+            FROM tb_det_folio_adelantado
+            WHERE LTRIM(RTRIM(emb_folio)) = @f AND otp_status = 'PENDING'",
+                new { f = request.EmbFolio.Trim() });
+
+            if (folio == null)
+                return Ok(new { success = false, message = "Folio no encontrado o ya procesado." });
+
+            // 3. Actualizar estado a AUTHORIZED (sin OTP)
+            var rowsAffected = await conn.ExecuteAsync(@"
+            UPDATE tb_det_folio_adelantado SET 
+                otp_status = 'AUTHORIZED',
+                autorizo = @sup,
+                otp_generado_por = @sup,
+                otp_generado_at = GETDATE(),
+                otp_usado_at = GETDATE()
+            WHERE LTRIM(RTRIM(emb_folio)) = @f AND otp_status = 'PENDING'",
+                new { sup = request.SupervisorId.Trim(), f = request.EmbFolio.Trim() });
+
+            if (rowsAffected == 0)
+                return Ok(new { success = false, message = "El folio ya fue procesado por otro usuario." });
+
+            // 4. Construir BatchId para auditoría
+            var batchId = ATUCore.BuildBatchId(
+                (string)folio.recibo_cap,
+                (string)folio.prod_clave,
+                ((int)folio.tarimacap).ToString());
+
+            // 5. Emitir evento SignalR (FolioAutorizado)
+            await _auditHub.Clients.All.SendAsync("FolioAutorizado", new
+            {
+                EmbFolio = request.EmbFolio.Trim(),
+                BatchId = batchId,
+                SupervisorId = request.SupervisorId.Trim(),
+                AuthorizedAt = DateTime.Now,
+                Message = $"Lote {batchId} autorizado remotamente por {request.SupervisorId}",
+                Comments = request.Comments ?? "Autorización remota sin OTP"
+            });
+
+            // 6. Emitir evento al feed de auditoría
+            await EmitirAuditEvent("green", "✅ Autorización remota", batchId,
+                request.SupervisorId, "Sistema",
+                $"Folio {request.EmbFolio} autorizado sin OTP por {request.SupervisorId}");
+
+            // 7. Guardar en tabla de auditoría (si existe)
+            await InsertAudit(conn, request.EmbFolio, "AUTHORIZED_REMOTE",
+                request.SupervisorId, request.DeviceFingerprint,
+                folio.prod_clave, folio.recibo_cap, folio.tarimacap.ToString(),
+                $"Autorización remota - {request.Comments}");
+
+            return Ok(new AuthorizeFolioResponse
+            {
+                Success = true,
+                Message = "Folio autorizado exitosamente",
+                AuthorizationId = Guid.NewGuid().ToString(),
+                AuthorizedAt = DateTime.Now
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = $"Error interno: {ex.Message}" });
+        }
+    }
+
 
     // ═══════════════════════════════════════════════════════════════════════
     // Helpers privados
@@ -696,7 +782,7 @@ public class OTPController : ControllerBase
                 operatorId,
                 message,
                 isFraud,
-                timestamp = DateTime.UtcNow,
+                timestamp = DateTime.Now,
                 eventId = Guid.NewGuid()
             });
         }

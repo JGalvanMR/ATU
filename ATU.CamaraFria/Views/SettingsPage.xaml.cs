@@ -69,7 +69,7 @@ public partial class SettingsPage : ContentPage
         LblEmpleado.Text = $"Empleado: {Preferences.Get("SUPERVISOR_ID", "—")}";
 
         // URL guardada
-        EntryUrl.Text = Preferences.Get("SERVER_URL", "http://192.168.123.155:5002");
+        EntryUrl.Text = Preferences.Get("SERVER_URL", "http://192.168.123.244:83/auth");
 
         // Dispositivo
         LblModelo.Text = DeviceInfo.Model ?? "—";

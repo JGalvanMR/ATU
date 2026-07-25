@@ -20,7 +20,7 @@ public static class ATUCore
         string supervisorId,
         DateTimeOffset? at = null)
     {
-        var window = GetTimeWindow(at ?? DateTimeOffset.UtcNow);
+        var window = GetTimeWindow(at ?? DateTimeOffset.Now);
         return ComputeOTP(deviceSecret, batchId, supervisorId, window);
     }
 
@@ -35,7 +35,7 @@ public static class ATUCore
         DateTimeOffset? at = null)
     {
         var batchId = BuildBatchId(productoClave, recibo, tarima);
-        var window = GetTimeWindow(at ?? DateTimeOffset.UtcNow);
+        var window = GetTimeWindow(at ?? DateTimeOffset.Now);
         return ComputeOTP(deviceSecret, batchId, supervisorId, window);
     }
 
@@ -53,7 +53,7 @@ public static class ATUCore
             return new ATUValidationResult(ATUStatus.Red, $"FRAUDE: OTP de '{claimedBatchId}' usado en '{actualBatchId}'.", false, claimedBatchId, actualBatchId);
         }
 
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.Now;
         var currentWindow = GetTimeWindow(now);
 
         // ✅ CAMBIO 2: Nueva lógica de ventanas "Warehouse-Friendly"

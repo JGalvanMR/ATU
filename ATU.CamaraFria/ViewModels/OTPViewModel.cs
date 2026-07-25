@@ -51,6 +51,9 @@ public partial class OTPViewModel : BaseViewModel
     [ObservableProperty] private string _countdownText = "00:30";
     [ObservableProperty] private int _countdownSeconds = 30;
 
+    [ObservableProperty] private bool _showAutorizarRapido;
+    private readonly string _deviceFingerprint;
+
     private string _supervisorId = string.Empty;
     private CancellationTokenSource? _cts;
 
@@ -265,6 +268,58 @@ public partial class OTPViewModel : BaseViewModel
         StatusColor = "#8AA0BC";
         MostrarPanel(Panel.ScanNormal);
         SolicitarFocoEntrada?.Invoke();
+    }
+
+    [RelayCommand]
+    private async Task AutorizarRapidoAsync()
+    {
+        if (string.IsNullOrEmpty(EmbFolio))
+        {
+            await Application.Current.MainPage.DisplayAlert("Error", "No hay folio seleccionado", "OK");
+            return;
+        }
+
+        var confirm = await Application.Current.MainPage.DisplayAlert(
+            "Confirmar autorización",
+            $"¿Autorizar el folio {EmbFolio} sin verificación física?\n\n" +
+            "El operador de CargaEmbarques podrá surtir el producto de inmediato.",
+            "Sí, autorizar", "Cancelar");
+
+        if (!confirm) return;
+
+        IsProcessing = true;
+        try
+        {
+            var response = await _apiClient.AuthorizeFolioAsync(new AuthorizeFolioRequest
+            {
+                SupervisorId = _supervisorId,
+                EmbFolio = EmbFolio,
+                BatchId = BatchId,
+                DeviceFingerprint = _deviceFingerprint,
+                Comments = "Autorización remota por ausencia física - Aprobación rápida"
+            });
+
+            if (response?.Success == true)
+            {
+                await Application.Current.MainPage.DisplayAlert("✅ Éxito",
+                    $"Folio {EmbFolio} autorizado correctamente.", "OK");
+                await Shell.Current.GoToAsync(".."); // Volver a la lista de solicitudes
+            }
+            else
+            {
+                await Application.Current.MainPage.DisplayAlert("Error",
+                    response?.Message ?? "No se pudo autorizar", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("Error",
+                $"Error inesperado: {ex.Message}", "OK");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
     }
 
     // ── Generación de OTP ────────────────────────────────────────────────────
