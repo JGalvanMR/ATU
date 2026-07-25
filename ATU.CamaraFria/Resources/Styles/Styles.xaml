@@ -1,79 +1,41 @@
 ﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    ════════════════════════════════════════════════════════════════════════
+    STYLES.XAML — Estilos theme-aware.
+
+    Cada Setter que define un color usa AppThemeBinding con los pares
+    ColorXxx (Dark) y ColorXxxLight definidos en Theme.xaml. Esto es válido
+    porque <Setter Value="..."> sí acepta markup extensions y BindingBase.
+    ════════════════════════════════════════════════════════════════════════-->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!--  ============================================================  -->
-    <!--  COLORES  -->
-    <!--  Definidos como recursos para uso directo en páginas XAML.  -->
-    <!--  En los estilos de abajo se usan valores literales para  -->
-    <!--  evitar errores de conversión en .NET 10 MAUI.  -->
-    <!--  ============================================================  -->
-
-    <Color x:Key="ColorBackground">#070B18</Color>
-    <Color x:Key="ColorSurface">#0F1724</Color>
-    <Color x:Key="ColorSurfaceSoft">#0A1120</Color>
-
-    <Color x:Key="ColorPrimary">#0A84FF</Color>
-    <Color x:Key="ColorSuccess">#30D158</Color>
-    <Color x:Key="ColorWarning">#FF9F0A</Color>
-    <Color x:Key="ColorError">#FF453A</Color>
-
-    <Color x:Key="ColorTextPrimary">#FFFFFF</Color>
-    <Color x:Key="ColorTextSecondary">#8CA0C0</Color>
-    <Color x:Key="ColorTextMuted">#4A6080</Color>
-
-    <Color x:Key="ColorBorderPrimary">#0A84FF</Color>
-    <Color x:Key="ColorBorderSuccess">#248A3D</Color>
-    <Color x:Key="ColorBorderWarning">#FF9F0A</Color>
-    <Color x:Key="ColorBorderError">#FF453A</Color>
-    <Color x:Key="ColorBorderDefault">#1E3A5F</Color>
-
-    <!--  Alias legacy (valores literales obligatorios)  -->
-    <Color x:Key="Primary">#0A84FF</Color>
-    <Color x:Key="BackgroundDark">#070B18</Color>
-
-    <!--  ============================================================  -->
-    <!--  BRUSHES (para propiedades Stroke/Background de tipo Brush)  -->
-    <!--  ============================================================  -->
-
-    <SolidColorBrush x:Key="BrushPrimary" Color="#0A84FF" />
-    <SolidColorBrush x:Key="BrushSuccess" Color="#30D158" />
-    <SolidColorBrush x:Key="BrushWarning" Color="#FF9F0A" />
-    <SolidColorBrush x:Key="BrushError" Color="#FF453A" />
-    <SolidColorBrush x:Key="BrushBorderDefault" Color="#1E3A5F" />
-    <SolidColorBrush x:Key="BrushBorderInput" Color="#2A4A70" />
-    <SolidColorBrush x:Key="BrushSurface" Color="#0F1724" />
-    <SolidColorBrush x:Key="BrushSurfaceSoft" Color="#0A1120" />
-
-    <!--  ============================================================  -->
-    <!--  TIPOGRAFÍA  -->
-    <!--  ============================================================  -->
-
+    <!--  ═══════════════ TIPOGRAFÍA ═══════════════  -->
     <Style x:Key="TitleLabel" TargetType="Label">
         <Setter Property="FontSize" Value="20" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="#FFFFFF" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight}, Dark={StaticResource ColorTextPrimary}}" />
     </Style>
 
     <Style x:Key="SubtitleLabel" TargetType="Label">
         <Setter Property="FontSize" Value="15" />
-        <Setter Property="TextColor" Value="#8CA0C0" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight}, Dark={StaticResource ColorTextSecondary}}" />
     </Style>
 
     <Style x:Key="CaptionLabel" TargetType="Label">
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="TextColor" Value="#4A6080" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextMutedLight}, Dark={StaticResource ColorTextMuted}}" />
     </Style>
 
     <Style x:Key="HeaderLabel" TargetType="Label">
         <Setter Property="FontSize" Value="26" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="#FFFFFF" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight}, Dark={StaticResource ColorTextPrimary}}" />
     </Style>
 
     <Style x:Key="OtpCodeLabel" TargetType="Label">
         <Setter Property="FontSize" Value="88" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="#30D158" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorSuccessLight}, Dark={StaticResource ColorSuccess}}" />
         <Setter Property="CharacterSpacing" Value="18" />
         <Setter Property="HorizontalOptions" Value="Center" />
     </Style>
@@ -81,7 +43,7 @@
     <Style x:Key="CountdownLabel" TargetType="Label">
         <Setter Property="FontSize" Value="52" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="#FF453A" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorErrorLight}, Dark={StaticResource ColorError}}" />
         <Setter Property="HorizontalOptions" Value="End" />
         <Setter Property="VerticalOptions" Value="Center" />
     </Style>
@@ -93,72 +55,63 @@
         <Setter Property="HorizontalTextAlignment" Value="Center" />
     </Style>
 
-    <!--  ============================================================  -->
-    <!--  CONTENEDORES  -->
-    <!--  ============================================================  -->
-
+    <!--  ═══════════════ CONTENEDORES ═══════════════  -->
     <Style x:Key="CardStyle" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="Background" Value="{AppThemeBinding Light={StaticResource ColorSurfaceLight}, Dark={StaticResource ColorSurface}}" />
         <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="StrokeShape" Value="RoundRectangle 18" />
         <Setter Property="Padding" Value="18" />
     </Style>
 
     <Style x:Key="InputContainer" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource BrushSurfaceSoft}" />
-        <Setter Property="Stroke" Value="{StaticResource BrushBorderInput}" />
+        <Setter Property="Background" Value="{AppThemeBinding Light={StaticResource ColorSurfaceSoftLight}, Dark={StaticResource ColorSurfaceSoft}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource ColorBorderInputLight}, Dark={StaticResource ColorBorderInput}}" />
         <Setter Property="StrokeThickness" Value="1" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12" />
         <Setter Property="Padding" Value="14,4" />
     </Style>
 
     <Style x:Key="BorderPrimary" TargetType="Border">
-        <Setter Property="Stroke" Value="{StaticResource BrushPrimary}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource ColorPrimaryLight}, Dark={StaticResource ColorPrimary}}" />
         <Setter Property="StrokeThickness" Value="2.5" />
         <Setter Property="StrokeShape" Value="RoundRectangle 14" />
-        <Setter Property="Background" Value="{StaticResource BrushSurfaceSoft}" />
+        <Setter Property="Background" Value="{AppThemeBinding Light={StaticResource ColorSurfaceSoftLight}, Dark={StaticResource ColorSurfaceSoft}}" />
     </Style>
 
     <Style x:Key="BorderSuccess" TargetType="Border">
-        <Setter Property="Stroke" Value="{StaticResource BrushSuccess}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource ColorSuccessLight}, Dark={StaticResource ColorSuccess}}" />
         <Setter Property="StrokeThickness" Value="2" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12" />
-        <Setter Property="BackgroundColor" Value="#0A1A0A" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorSurfaceSuccessLight}, Dark={StaticResource ColorSurfaceSuccess}}" />
     </Style>
 
     <Style x:Key="BorderWarning" TargetType="Border">
-        <Setter Property="Stroke" Value="{StaticResource BrushWarning}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource ColorWarningLight}, Dark={StaticResource ColorWarning}}" />
         <Setter Property="StrokeThickness" Value="2" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12" />
-        <Setter Property="Background" Value="{StaticResource BrushSurface}" />
+        <Setter Property="Background" Value="{AppThemeBinding Light={StaticResource ColorSurfaceLight}, Dark={StaticResource ColorSurface}}" />
     </Style>
 
     <Style x:Key="BorderError" TargetType="Border">
-        <Setter Property="Stroke" Value="{StaticResource BrushError}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource ColorErrorLight}, Dark={StaticResource ColorError}}" />
         <Setter Property="StrokeThickness" Value="2" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12" />
-        <Setter Property="BackgroundColor" Value="#2A0A0A" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorSurfaceDangerLight}, Dark={StaticResource ColorSurfaceDanger}}" />
     </Style>
 
-    <!--  ============================================================  -->
-    <!--  INPUTS  -->
-    <!--  ============================================================  -->
-
+    <!--  ═══════════════ INPUTS ═══════════════  -->
     <Style x:Key="EntryStyle" TargetType="Entry">
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="#FFFFFF" />
-        <Setter Property="PlaceholderColor" Value="#4A6080" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight}, Dark={StaticResource ColorTextPrimary}}" />
+        <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource ColorPlaceholderLight}, Dark={StaticResource ColorPlaceholder}}" />
         <Setter Property="HeightRequest" Value="48" />
         <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 
-    <!--  ============================================================  -->
-    <!--  BOTONES  -->
-    <!--  ============================================================  -->
-
+    <!--  ═══════════════ BOTONES ═══════════════  -->
     <Style x:Key="PrimaryButton" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="#0A84FF" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorPrimaryLight}, Dark={StaticResource ColorPrimary}}" />
         <Setter Property="TextColor" Value="#FFFFFF" />
         <Setter Property="CornerRadius" Value="16" />
         <Setter Property="FontAttributes" Value="Bold" />
@@ -168,8 +121,8 @@
     </Style>
 
     <Style x:Key="SecondaryButton" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="#1E3A5F" />
-        <Setter Property="TextColor" Value="#FFFFFF" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight}, Dark={StaticResource ColorBorderDefault}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight}, Dark={StaticResource ColorTextPrimary}}" />
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="HeightRequest" Value="52" />
@@ -177,8 +130,8 @@
     </Style>
 
     <Style x:Key="DangerButton" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="#2A0A10" />
-        <Setter Property="TextColor" Value="#FF453A" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorSurfaceDangerSoftLight}, Dark={StaticResource ColorSurfaceDangerSoft}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorErrorLight}, Dark={StaticResource ColorError}}" />
         <Setter Property="CornerRadius" Value="16" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="FontSize" Value="17" />
@@ -187,7 +140,7 @@
     </Style>
 
     <Style x:Key="SmallActionButton" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="#0A84FF" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorPrimaryLight}, Dark={StaticResource ColorPrimary}}" />
         <Setter Property="TextColor" Value="#FFFFFF" />
         <Setter Property="CornerRadius" Value="20" />
         <Setter Property="FontSize" Value="15" />
@@ -196,22 +149,26 @@
         <Setter Property="Padding" Value="20,0" />
     </Style>
 
-    <!--  ============================================================  -->
-    <!--  LOADING  -->
-    <!--  ============================================================  -->
+    <Style x:Key="WarningButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ColorWarningLight}, Dark={StaticResource ColorWarning}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ColorTextOnWarningLight}, Dark={StaticResource ColorTextOnWarning}}" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="HeightRequest" Value="54" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
 
+    <!--  ═══════════════ LOADING ═══════════════  -->
     <Style x:Key="PrimaryLoader" TargetType="ActivityIndicator">
-        <Setter Property="Color" Value="#0A84FF" />
+        <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource ColorPrimaryLight}, Dark={StaticResource ColorPrimary}}" />
         <Setter Property="HorizontalOptions" Value="Center" />
     </Style>
 
-    <!--  ============================================================  -->
-    <!--  SEPARADORES  -->
-    <!--  ============================================================  -->
-
+    <!--  ═══════════════ SEPARADORES ═══════════════  -->
     <Style x:Key="Divider" TargetType="BoxView">
         <Setter Property="HeightRequest" Value="1" />
-        <Setter Property="Color" Value="#1E3A5F" />
+        <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource ColorBorderDefaultLight}, Dark={StaticResource ColorBorderDefault}}" />
     </Style>
 
 </ResourceDictionary>

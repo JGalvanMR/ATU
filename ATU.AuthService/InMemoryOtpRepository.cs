@@ -29,5 +29,5 @@ public sealed class InMemoryOtpRepository : IOtpRepository
 
     public Task<OtpRecord?> GetPendingByBatchAsync(string batchId)
         => Task.FromResult(_records.FirstOrDefault(r =>
-            r.BatchId == batchId && !r.IsUsed && r.ExpiresAt > DateTimeOffset.UtcNow));
+            r.BatchId == batchId && !r.IsUsed && r.ExpiresAt > DateTimeOffset.Now));
 }

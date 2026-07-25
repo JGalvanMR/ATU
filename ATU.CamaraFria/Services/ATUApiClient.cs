@@ -37,6 +37,9 @@ public interface IATUApi
 
     [Get("/api/scanner/catalogo")]
     Task<List<Dictionary<string, string>>> GetCatalogoDll();
+
+    [Post("/api/otp/authorize-folio")]
+    Task<AuthorizeFolioResponse> AuthorizeFolio([Body] AuthorizeFolioRequest request);
 }
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -59,6 +62,9 @@ public class ValidationResponse
 public class GenerateOtpFolioRequest
 {
     public string EmbFolio { get; set; } = string.Empty;
+    public string ReciboCap { get; set; } = string.Empty;
+    public string ProdClave { get; set; } = string.Empty;
+    public string TarimaCap { get; set; } = string.Empty;
     public string BatchId { get; set; } = string.Empty;
     public string SupervisorId { get; set; } = string.Empty;
     public string DeviceFingerprint { get; set; } = string.Empty;
@@ -93,6 +99,25 @@ public class HealthResponse
     public DateTime Timestamp { get; set; }
 }
 
+// En ATUApiClient.cs, después de las otras clases, agregar:
+
+public class AuthorizeFolioRequest
+{
+    public string SupervisorId { get; set; } = string.Empty;
+    public string EmbFolio { get; set; } = string.Empty;
+    public string BatchId { get; set; } = string.Empty;
+    public string DeviceFingerprint { get; set; } = string.Empty;
+    public string Comments { get; set; } = string.Empty;
+}
+
+public class AuthorizeFolioResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string AuthorizationId { get; set; } = string.Empty;
+    public DateTime AuthorizedAt { get; set; }
+}
+
 // ── Cliente principal ─────────────────────────────────────────────────────────
 
 public class ATUApiClient
@@ -114,7 +139,9 @@ public class ATUApiClient
         _syncQueue = syncQueue;
         _logger = logger;
         _deviceFingerprint = fingerprintService.GetFingerprint();
-        _api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5001"));
+        //_api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.155:5002"));
+        //_api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://atu-web.int.mrlucky.com:83/auth"));
+        _api = BuildApi(Preferences.Get(BASE_URL_KEY, "http://192.168.123.244:83/auth"));
     }
 
     public void SetBaseUrl(string url)
@@ -179,7 +206,7 @@ public class ATUApiClient
 
     // ── Generar OTP para folio adelantado ────────────────────────────────────
 
-    public async Task<OTPResponse?> GenerateOTPForFolioAsync(string embFolio, string supervisorId, string batchId)
+    public async Task<OTPResponse?> GenerateOTPForFolioAsync(string embFolio, string reciboCap, string prodClave, string tarimaCap, string supervisorId, string batchId)
     {
         try
         {
@@ -190,6 +217,9 @@ public class ATUApiClient
             {
                 EmbFolio = embFolio,
                 BatchId = batchId,
+                ReciboCap = reciboCap,
+                ProdClave = prodClave,
+                TarimaCap = tarimaCap,
                 SupervisorId = supervisorId,
                 DeviceFingerprint = _deviceFingerprint
             });
@@ -306,6 +336,25 @@ public class ATUApiClient
             return new DataTable(); // Retorna tabla vacía para no romper el scanner
         }
     }
+
+    public async Task<AuthorizeFolioResponse?> AuthorizeFolioAsync(AuthorizeFolioRequest request)
+    {
+        try
+        {
+            request.DeviceFingerprint = _deviceFingerprint;
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+                return new AuthorizeFolioResponse { Success = false, Message = "Sin conexión." };
+
+            return await _api.AuthorizeFolio(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en autorización remota");
+            return new AuthorizeFolioResponse { Success = false, Message = $"Error: {ex.Message}" };
+        }
+    }
+
+
 }
 
 public interface IDeviceFingerprintService

@@ -12,7 +12,7 @@ public sealed class EnrolledDevice
     public required string EncryptedSecret { get; init; }
     public required string PushToken { get; init; } = string.Empty;  // AGREGADO
     public bool IsActive { get; set; } = true;
-    public DateTimeOffset EnrolledAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset EnrolledAt { get; init; } = DateTimeOffset.Now;
     public DateTimeOffset? RevokedAt { get; set; }
     public DateTimeOffset? LastUsedAt { get; set; }  // AGREGADO (opcional pero útil)
     public string ColdStorageZoneId { get; init; } = string.Empty;  // AGREGADO
@@ -36,7 +36,7 @@ public sealed class DeviceEnrollmentService(IDeviceRepository repository, IEncry
         if (existing is not null)
         {
             existing.IsActive = false;
-            existing.RevokedAt = DateTimeOffset.UtcNow;
+            existing.RevokedAt = DateTimeOffset.Now;
             await repository.UpdateAsync(existing);
         }
 
@@ -83,7 +83,7 @@ public sealed class DeviceEnrollmentService(IDeviceRepository repository, IEncry
         }
 
         active.IsActive = false;
-        active.RevokedAt = DateTimeOffset.UtcNow;
+        active.RevokedAt = DateTimeOffset.Now;
         await repository.UpdateAsync(active);
         return true;
     }

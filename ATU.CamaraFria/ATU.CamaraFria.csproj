@@ -8,7 +8,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<OutputType>Exe</OutputType>
-		
+
+		<RuntimeIdentifiers>android-arm;android-arm64;android-x64</RuntimeIdentifiers>
+
 		<ApplicationTitle>ATU Cámara Fría</ApplicationTitle>
 		<ApplicationId>com.mrlucky.atu.camarafria</ApplicationId>
 		<ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
@@ -21,7 +23,6 @@
 		<Platforms>AnyCPU</Platforms>
 		<NoWarn>NU1605</NoWarn>
 		<NuGetAudit>False</NuGetAudit>
-		<PlatformTarget>x64</PlatformTarget>
 		<AndroidSigningKeyStore>Keystore\GABIRA.keystore</AndroidSigningKeyStore>
 	</PropertyGroup>
 
@@ -30,24 +31,23 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
-	  <IsTrimmable>True</IsTrimmable>
-	  <AndroidKeyStore>True</AndroidKeyStore>
-	  <AndroidSigningStorePass>GABIRA</AndroidSigningStorePass>
-	  <AndroidSigningKeyAlias>GABIRA</AndroidSigningKeyAlias>
-	  <AndroidSigningKeyPass>GABIRA</AndroidSigningKeyPass>
+		<IsTrimmable>false</IsTrimmable>
+		<AndroidKeyStore>True</AndroidKeyStore>
+		<AndroidSigningStorePass>GABIRA</AndroidSigningStorePass>
+		<AndroidSigningKeyAlias>GABIRA</AndroidSigningKeyAlias>
+		<AndroidSigningKeyPass>GABIRA</AndroidSigningKeyPass>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
-	  <IsTrimmable>True</IsTrimmable>
-	  <AndroidKeyStore>True</AndroidKeyStore>
-	  <AndroidSigningStorePass>GABIRA</AndroidSigningStorePass>
-	  <AndroidSigningKeyAlias>GABIRA</AndroidSigningKeyAlias>
-	  <AndroidSigningKeyPass>GABIRA</AndroidSigningKeyPass>
+		<IsTrimmable>false</IsTrimmable>
+		<AndroidKeyStore>True</AndroidKeyStore>
+		<AndroidSigningStorePass>GABIRA</AndroidSigningStorePass>
+		<AndroidSigningKeyAlias>GABIRA</AndroidSigningKeyAlias>
+		<AndroidSigningKeyPass>GABIRA</AndroidSigningKeyPass>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="Resources\AppIcon\appicon.svg" />
-		<None Remove="Resources\AppIcon\appiconfg.svg" />
+		<MauiSplashScreen Include="Resources\Splash\splash.png" BaseSize="128,128" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -55,7 +55,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" />
+		<MauiIcon Include="Resources\AppIcon\appicon.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -96,10 +96,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-        <ProjectReference Include="..\ATU.Shared\ATU.Shared.csproj" />
-    </ItemGroup>
+		<ProjectReference Include="..\ATU.Shared\ATU.Shared.csproj" />
+	</ItemGroup>
 
 	<ItemGroup>
+		<MauiXaml Update="Resources\Styles\Theme.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 		<MauiXaml Update="Views\PendingSyncPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>

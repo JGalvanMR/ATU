@@ -49,7 +49,7 @@ public sealed class SqlDeviceRepository : IDeviceRepository
             await using var conn = new SqlConnection(_connStr);
             await conn.ExecuteAsync(@"
                 -- Desactivar registros anteriores del mismo operador
-                UPDATE tb_atu_devices SET is_active = 0, revoked_at = GETUTCDATE()
+                UPDATE tb_atu_devices SET is_active = 0, revoked_at = GETDATE()
                 WHERE  operator_id = @operatorId;
 
                 -- Insertar el nuevo
@@ -60,7 +60,7 @@ public sealed class SqlDeviceRepository : IDeviceRepository
                 VALUES
                     (@operatorId, @fingerprint, @encryptedSecret,
                      @pushToken, @zoneId,
-                     1, GETUTCDATE())",
+                     1, GETDATE())",
                 new
                 {
                     operatorId = device.OperatorId.Trim(),
@@ -87,7 +87,7 @@ public sealed class SqlDeviceRepository : IDeviceRepository
                     fingerprint           = @fingerprint,
                     encrypted_secret      = @encryptedSecret,
                     is_active             = @isActive,
-                    revoked_at            = CASE WHEN @isActive = 0 THEN GETUTCDATE() ELSE NULL END
+                    revoked_at            = CASE WHEN @isActive = 0 THEN GETDATE() ELSE NULL END
                 WHERE operator_id = @operatorId",
                 new
                 {
@@ -122,7 +122,7 @@ public sealed class SqlDeviceRepository : IDeviceRepository
                         [push_token]           VARCHAR(256)  NULL,
                         [cold_storage_zone_id] VARCHAR(50)   NULL,
                         [is_active]            BIT           NOT NULL DEFAULT 1,
-                        [enrolled_at]          DATETIME      NOT NULL DEFAULT GETUTCDATE(),
+                        [enrolled_at]          DATETIME      NOT NULL DEFAULT GETDATE(),
                         [revoked_at]           DATETIME      NULL
                     );
                     CREATE NONCLUSTERED INDEX IX_atu_devices_operator

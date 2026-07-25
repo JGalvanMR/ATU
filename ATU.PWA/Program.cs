@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSignalR();
-
 var app = builder.Build();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+/*
 //app.MapHub<AuditHub>("/hubs/audit");
 app.MapHub<AuditHub>("/audit-hub");
 
@@ -23,7 +22,7 @@ app.MapGet("/test-event", async (IHubContext<AuditHub> hub) =>
         supervisorId = "SUP-Galvan",
         operatorId = "OP-Test",
         message = "Evento enviado desde backend",
-        timestamp = DateTime.UtcNow
+        timestamp = DateTime.Now
     };
 
     await hub.Clients.All.SendAsync("AuditEvent", evt);
@@ -130,7 +129,7 @@ app.MapGet("/test-fifo-scenario", async (IHubContext<AuditHub> hub) =>
     await hub.Clients.All.SendAsync("FraudAlert", new
     {
         EventId = Guid.NewGuid(),
-        Timestamp = DateTimeOffset.UtcNow,
+        Timestamp = DateTimeOffset.Now,
         Message = "Intento de fraude detectado: Producto no coincide con OTP",
         SupervisorId = "PEDRO-EMBARQUES",
         BatchId = "PROD-B-200324",
@@ -143,7 +142,6 @@ app.MapGet("/test-fifo-scenario", async (IHubContext<AuditHub> hub) =>
         events = new[] { "OTP Generated", "Authorized", "Expired", "FRAUD" }
     });
 });
-
 // Helper para crear eventos
 static object CreateTestEvent(string status, object? overrides = null)
 {
@@ -169,7 +167,7 @@ static object CreateTestEvent(string status, object? overrides = null)
             "blue" => "OTP generado. Esperando validación.",
             _ => "Evento de prueba"
         },
-        timestamp = DateTime.UtcNow,
+        timestamp = DateTime.Now,
         isFraud = status == "red",
         eventId = Guid.NewGuid().ToString()
     };
@@ -186,5 +184,6 @@ static object CreateTestEvent(string status, object? overrides = null)
 
     return dict;
 }
+*/
 
 app.Run();

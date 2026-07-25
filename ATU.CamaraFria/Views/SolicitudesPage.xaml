@@ -9,11 +9,12 @@
     Padding="{OnPlatform iOS='0,48,0,0',
                          Default='0,12,0,12'}"
     ios:Page.UseSafeArea="True"
-    BackgroundColor="#070B18">
+    BackgroundColor="{AppThemeBinding Light={StaticResource ColorBackgroundLight},
+                                      Dark={StaticResource ColorBackground}}">
 
     <Grid RowDefinitions="Auto,*,Auto">
 
-        <!--  HEADER (más limpio tipo iOS)  -->
+        <!--  HEADER  -->
         <Grid
             Grid.Row="0"
             Padding="18,14"
@@ -24,23 +25,27 @@
                     FontAttributes="Bold"
                     FontSize="22"
                     Text="Solicitudes"
-                    TextColor="#FFFFFF" />
+                    TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                Dark={StaticResource ColorTextPrimary}}" />
                 <Label
                     x:Name="LblUltimaActualizacion"
                     FontSize="13"
-                    TextColor="#8CA0C0" />
+                    TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                Dark={StaticResource ColorTextSecondary}}" />
             </VerticalStackLayout>
 
             <Button
                 Grid.Column="1"
                 Padding="0"
-                BackgroundColor="#0F1724"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                  Dark={StaticResource ColorSurface}}"
                 Clicked="OnRefrescar"
                 CornerRadius="24"
                 FontSize="22"
                 HeightRequest="48"
                 Text="↻"
-                TextColor="#0A84FF"
+                TextColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                            Dark={StaticResource ColorPrimary}}"
                 WidthRequest="48" />
         </Grid>
 
@@ -48,7 +53,8 @@
         <RefreshView
             x:Name="RefreshView"
             Grid.Row="1"
-            RefreshColor="#0A84FF"
+            RefreshColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                           Dark={StaticResource ColorPrimary}}"
             Refreshing="OnRefrescar">
 
             <CollectionView x:Name="ListaSolicitudes" Margin="14,0">
@@ -65,12 +71,14 @@
                             FontAttributes="Bold"
                             FontSize="18"
                             Text="Sin solicitudes"
-                            TextColor="#8CA0C0" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                        Dark={StaticResource ColorTextSecondary}}" />
                         <Label
                             FontSize="14"
                             HorizontalTextAlignment="Center"
                             Text="Las solicitudes aparecerán automáticamente"
-                            TextColor="#4A6080" />
+                            TextColor="{AppThemeBinding Light={StaticResource ColorTextMutedLight},
+                                                        Dark={StaticResource ColorTextMuted}}" />
                     </VerticalStackLayout>
                 </CollectionView.EmptyView>
 
@@ -82,67 +90,69 @@
                             <SwipeView.RightItems>
                                 <SwipeItems Mode="Execute">
                                     <SwipeItem
-                                        BackgroundColor="#2A0A10"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource ColorSwipeDangerLight},
+                                                                          Dark={StaticResource ColorSwipeDanger}}"
                                         CommandParameter="{Binding .}"
                                         Invoked="OnIgnorarSolicitud"
                                         Text="Ignorar" />
                                 </SwipeItems>
                             </SwipeView.RightItems>
 
-                            <!--  CARD MÁS LIGERA  -->
                             <Border
                                 Margin="0,8"
                                 Padding="16"
-                                BackgroundColor="#0F1724"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource ColorSurfaceLight},
+                                                                  Dark={StaticResource ColorSurface}}"
                                 StrokeShape="RoundRectangle 20"
                                 StrokeThickness="0">
 
                                 <VerticalStackLayout Spacing="10">
 
-                                    <!--  FILA 1  -->
                                     <Grid ColumnDefinitions="*,Auto">
                                         <Label
                                             FontAttributes="Bold"
                                             FontSize="17"
                                             Text="{Binding TituloFolio}"
-                                            TextColor="#FFFFFF" />
+                                            TextColor="{AppThemeBinding Light={StaticResource ColorTextPrimaryLight},
+                                                                        Dark={StaticResource ColorTextPrimary}}" />
                                         <Label
                                             Grid.Column="1"
                                             FontAttributes="Bold"
                                             FontSize="13"
                                             Text="{Binding TiempoTranscurrido}"
-                                            TextColor="#8CA0C0" />
+                                            TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                                        Dark={StaticResource ColorTextSecondary}}" />
                                     </Grid>
 
-                                    <!--  PRODUCTO  -->
                                     <Label
                                         FontAttributes="Bold"
                                         FontSize="16"
                                         LineBreakMode="TailTruncation"
                                         Text="{Binding InfoProducto}"
-                                        TextColor="#0A84FF" />
+                                        TextColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                                    Dark={StaticResource ColorPrimary}}" />
 
-                                    <!--  PALLET  -->
                                     <Label
                                         FontSize="14"
                                         Text="{Binding InfoPallet}"
-                                        TextColor="#8CA0C0" />
+                                        TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                                    Dark={StaticResource ColorTextSecondary}}" />
 
-                                    <!--  FOOTER  -->
                                     <Grid ColumnDefinitions="*,Auto">
 
                                         <Label
                                             FontSize="14"
                                             LineBreakMode="TailTruncation"
                                             Text="{Binding InfoSolicitante}"
-                                            TextColor="#8CA0C0"
+                                            TextColor="{AppThemeBinding Light={StaticResource ColorTextSecondaryLight},
+                                                                        Dark={StaticResource ColorTextSecondary}}"
                                             VerticalOptions="Center" />
 
-                                        <!--  BOTÓN iOS STYLE - Mínimo 44pt táctil  -->
                                         <Button
                                             Grid.Column="1"
                                             Padding="20,0"
-                                            BackgroundColor="#0A84FF"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                                              Dark={StaticResource ColorPrimary}}"
                                             Clicked="OnAutorizarSolicitud"
                                             CommandParameter="{Binding .}"
                                             CornerRadius="20"
@@ -154,7 +164,8 @@
                                             VerticalOptions="Center">
                                             <Button.Shadow>
                                                 <Shadow
-                                                    Brush="#0A84FF"
+                                                    Brush="{AppThemeBinding Light={StaticResource ColorPrimaryLight},
+                                                                            Dark={StaticResource ColorPrimary}}"
                                                     Opacity="0.25"
                                                     Radius="6"
                                                     Offset="0,2" />
@@ -178,7 +189,8 @@
             FontSize="12"
             HorizontalOptions="Center"
             Text="Desliza para ignorar · Autoriza para generar OTP"
-            TextColor="#4A6080" />
+            TextColor="{AppThemeBinding Light={StaticResource ColorTextMutedLight},
+                                        Dark={StaticResource ColorTextMuted}}" />
 
     </Grid>
 </ContentPage>

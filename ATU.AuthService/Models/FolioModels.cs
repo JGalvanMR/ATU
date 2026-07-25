@@ -5,13 +5,13 @@
 public class FolioRecord
 {
     public string ProdClave { get; set; } = string.Empty;
-    public string ReciboSug { get; set; } = string.Empty;
-    public int TarimaSug { get; set; }
-    public string FechaCaducidad { get; set; } = string.Empty;
+    public string ReciboCap { get; set; } = string.Empty;
+    public int TarimaCap { get; set; }
     public string OtpStatus { get; set; } = string.Empty;   // PENDING / AUTHORIZED / FRAUD / EXPIRED
     public DateTime? OtpExpiresAt { get; set; }
     public string OtpGeneradoPor { get; set; } = string.Empty;
     public int OtpIntentos { get; set; }
+    public string FechaCaducidad { get; set; } = string.Empty;
     public string OtpDeviceFp { get; set; } = string.Empty;
 }
 
@@ -40,6 +40,9 @@ public class GenerateOtpFolioRequest
 {
     public string EmbFolio { get; set; } = string.Empty;
     public string BatchId { get; set; } = string.Empty;
+    public string ReciboCap { get; set; } = string.Empty;
+    public string ProdClave { get; set; } = string.Empty;
+    public string TarimaCap { get; set; } = string.Empty;
     public string SupervisorId { get; set; } = string.Empty;
     public string DeviceFingerprint { get; set; } = string.Empty;
 }
@@ -55,4 +58,24 @@ public class ValidateOtpFolioRequest
     public string ClaimedProdClave { get; set; } = string.Empty;
     public string ClaimedReciboSug { get; set; } = string.Empty;
     public int ClaimedTarimaSug { get; set; }
+}
+
+
+// --- Agregar al final de FolioModels.cs ---
+
+public class AuthorizeFolioRequest
+{
+    public string SupervisorId { get; set; } = string.Empty;
+    public string EmbFolio { get; set; } = string.Empty;
+    public string BatchId { get; set; } = string.Empty; // opcional
+    public string DeviceFingerprint { get; set; } = string.Empty;
+    public string Comments { get; set; } = string.Empty;
+}
+
+public class AuthorizeFolioResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string AuthorizationId { get; set; } = string.Empty;
+    public DateTime AuthorizedAt { get; set; }
 }

@@ -42,11 +42,17 @@ public partial class OTPViewModel : BaseViewModel
     [ObservableProperty] private string _infoSolicitante = string.Empty;
     [ObservableProperty] private string _motivoSolicitud = string.Empty;
     [ObservableProperty] private bool _esFolioAdelantado;
+    [ObservableProperty] private string _reciboCap = string.Empty;
+    [ObservableProperty] private string _prodClave = string.Empty;
+    [ObservableProperty] private string _tarimaCap = string.Empty;
 
     // ── Panel 3: OTP ─────────────────────────────────────────────────────────
     [ObservableProperty] private string _otpCode = string.Empty;
     [ObservableProperty] private string _countdownText = "00:30";
     [ObservableProperty] private int _countdownSeconds = 30;
+
+    [ObservableProperty] private bool _showAutorizarRapido;
+    private readonly string _deviceFingerprint;
 
     private string _supervisorId = string.Empty;
     private CancellationTokenSource? _cts;
@@ -64,11 +70,21 @@ public partial class OTPViewModel : BaseViewModel
 
     // ── Llamado desde SolicitudesPage cuando el supervisor toca AUTORIZAR ─────
     public void CargarFolioAdelantado(
-        string embFolio, string prodClave, string reciboSug, string tarimaSug,
-        string producto = "", string responsable = "", string motivo = "")
+        string embFolio,
+        string reciboCap,
+        string prodClave,
+        string tarimaCap,
+        string reciboSug,
+        string tarimaSug,
+        string producto = "",
+        string responsable = "",
+        string motivo = "")
     {
         EmbFolio = embFolio;
-        BatchId = $"{reciboSug.TrimStart('0')}-{prodClave.Trim()}-{tarimaSug.TrimStart('0')}".ToUpper();
+        ReciboCap = reciboCap;
+        ProdClave = prodClave;
+        TarimaCap = tarimaCap;
+        BatchId = $"{reciboCap.TrimStart('0')}-{prodClave.Trim()}-{tarimaCap.TrimStart('0')}".ToUpper();
         InfoProducto = $"{prodClave.Trim()} — {producto.Trim()}";
         InfoSolicitante = responsable.Trim();
         MotivoSolicitud = motivo.Trim();
@@ -254,6 +270,58 @@ public partial class OTPViewModel : BaseViewModel
         SolicitarFocoEntrada?.Invoke();
     }
 
+    [RelayCommand]
+    private async Task AutorizarRapidoAsync()
+    {
+        if (string.IsNullOrEmpty(EmbFolio))
+        {
+            await Application.Current.MainPage.DisplayAlert("Error", "No hay folio seleccionado", "OK");
+            return;
+        }
+
+        var confirm = await Application.Current.MainPage.DisplayAlert(
+            "Confirmar autorización",
+            $"¿Autorizar el folio {EmbFolio} sin verificación física?\n\n" +
+            "El operador de CargaEmbarques podrá surtir el producto de inmediato.",
+            "Sí, autorizar", "Cancelar");
+
+        if (!confirm) return;
+
+        IsProcessing = true;
+        try
+        {
+            var response = await _apiClient.AuthorizeFolioAsync(new AuthorizeFolioRequest
+            {
+                SupervisorId = _supervisorId,
+                EmbFolio = EmbFolio,
+                BatchId = BatchId,
+                DeviceFingerprint = _deviceFingerprint,
+                Comments = "Autorización remota por ausencia física - Aprobación rápida"
+            });
+
+            if (response?.Success == true)
+            {
+                await Application.Current.MainPage.DisplayAlert("✅ Éxito",
+                    $"Folio {EmbFolio} autorizado correctamente.", "OK");
+                await Shell.Current.GoToAsync(".."); // Volver a la lista de solicitudes
+            }
+            else
+            {
+                await Application.Current.MainPage.DisplayAlert("Error",
+                    response?.Message ?? "No se pudo autorizar", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("Error",
+                $"Error inesperado: {ex.Message}", "OK");
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
     // ── Generación de OTP ────────────────────────────────────────────────────
 
     private async Task GenerarOTPNormalAsync(string batchId)
@@ -301,7 +369,7 @@ public partial class OTPViewModel : BaseViewModel
         IsProcessing = true;
         try
         {
-            var resp = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, _supervisorId, BatchId);
+            var resp = await _apiClient.GenerateOTPForFolioAsync(EmbFolio, ReciboCap, ProdClave, TarimaCap, _supervisorId, BatchId);
             if (resp?.Success == true && resp.Data != null)
             {
                 if (!string.IsNullOrEmpty(resp.Data.BatchId)) BatchId = resp.Data.BatchId;

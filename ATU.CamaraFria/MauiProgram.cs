@@ -27,7 +27,7 @@ public static class MauiProgram
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
-
+            builder.Services.AddSingleton<IThemeService>(ThemeService.Instance);
             // ── Infraestructura ─────────────────────────────────────────────
             builder.Services.AddSingleton<SyncDbContext>();
             builder.Services.AddSingleton<SyncQueueService>();

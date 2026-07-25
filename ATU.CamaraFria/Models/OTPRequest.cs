@@ -50,7 +50,7 @@ public class LabelScanData
     /// <summary>
     /// Timestamp del escaneo
     /// </summary>
-    public DateTime ScannedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ScannedAt { get; set; } = DateTime.Now;
 
     /// <summary>
     /// Lote extraído del código

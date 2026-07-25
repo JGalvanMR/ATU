@@ -10,15 +10,58 @@ namespace ATU.CamaraFria.Views;
 public partial class SettingsPage : ContentPage
 {
     private readonly ATUApiClient _apiClient;
+    private readonly IThemeService _themeService = ThemeService.Instance;
 
     public SettingsPage()
     {
         InitializeComponent();
+        UpdateSwitchesFromTheme(_themeService.CurrentTheme);
+        _themeService.ThemeChanged += OnThemeChanged;
         _apiClient = Application.Current!.Handler!.MauiContext!
                         .Services.GetRequiredService<ATUApiClient>();
         CargarDatos();
     }
+    private void OnThemeChanged(object? sender, AppTheme e)
+        => MainThread.BeginInvokeOnMainThread(() => UpdateSwitchesFromTheme(e));
+    private void UpdateSwitchesFromTheme(AppTheme theme)
+    {
+        SwitchFollowSystem.IsToggled = theme == AppTheme.Unspecified
+                                       || Application.Current?.UserAppTheme == AppTheme.Unspecified;
 
+        SwitchDarkMode.IsToggled = _themeService.IsDark;
+
+        // El switch manual solo se puede tocar cuando NO seguimos al sistema.
+        SwitchDarkMode.IsEnabled = !SwitchFollowSystem.IsToggled;
+        LblModoDescripcion.Text = SwitchFollowSystem.IsToggled
+            ? "Sigue al sistema"
+            : (SwitchDarkMode.IsToggled ? "Oscuro fijo" : "Claro fijo");
+    }
+    // ───────── Handlers XAML ─────────
+    private void OnFollowSystemToggled(object? sender, ToggledEventArgs e)
+    {
+        if (e.Value)
+        {
+            _themeService.FollowSystemTheme();
+        }
+        else if (SwitchDarkMode.IsToggled)
+        {
+            _themeService.ApplyTheme(AppTheme.Dark);
+        }
+        else
+        {
+            _themeService.ApplyTheme(AppTheme.Light);
+        }
+
+        UpdateSwitchesFromTheme(_themeService.CurrentTheme);
+    }
+
+    private void OnDarkModeToggled(object? sender, ToggledEventArgs e)
+    {
+        // Si el usuario toca el switch manual, abandonamos el modo "seguir sistema".
+        SwitchFollowSystem.IsToggled = false;
+        _themeService.ApplyTheme(e.Value ? AppTheme.Dark : AppTheme.Light);
+        UpdateSwitchesFromTheme(_themeService.CurrentTheme);
+    }
     private void CargarDatos()
     {
         // Sesión
@@ -26,7 +69,7 @@ public partial class SettingsPage : ContentPage
         LblEmpleado.Text = $"Empleado: {Preferences.Get("SUPERVISOR_ID", "—")}";
 
         // URL guardada
-        EntryUrl.Text = Preferences.Get("SERVER_URL", "http://192.168.123.155:5001");
+        EntryUrl.Text = Preferences.Get("SERVER_URL", "http://192.168.123.244:83/auth");
 
         // Dispositivo
         LblModelo.Text = DeviceInfo.Model ?? "—";

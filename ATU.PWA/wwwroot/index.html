@@ -1019,48 +1019,57 @@
         setInterval(updateClock, 1000);
         updateClock();
 
+        // ✅ CONEXIÓN A SIGNALR CORREGIDA (Apunta al AuthService en el 5002)
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/hubs/audit")
-            .withAutomaticReconnect()
+            .withUrl("/auth/audit-hub", { withCredentials: false }) // <-- FIX AQUÍ
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
             .build();
 
+        // Escuchar eventos de autorización (Los que manda tu OTPController)
         connection.on("AuditEvent", evt => {
             handleAuditEvent(evt);
         });
 
-        connection.on("FraudAlert", evt => {
-            showFraudAlert(evt);
+        // Escuchar solicitudes de folio (Cuando CargaEmbarques pide autorización)
+        connection.on("NuevoFolioAdelantado", notif => {
+            handleAuditEvent({
+                status: "blue",
+                title: "🔔 Folio Adelantado Solicitado",
+                batchId: `${notif.prodClave}-${notif.reciboSug}-${notif.tarimaSug}`,
+                supervisorId: notif.responsable,
+                operatorId: "CargaEmbarques",
+                message: `Embarque ${notif.embFolio} - Motivo: ${notif.motivo}`,
+                timestamp: new Date().toISOString()
+            });
         });
 
+        // ✅ MANEJO VISUAL DEL ESTADO DE CONEXIÓN (El punto verde del header)
+        function updateConnectionUI(connected) {
+            const dot = document.getElementById('conn-dot');
+            const text = document.getElementById('conn-text');
+            if (connected) {
+                dot.classList.remove('disconnected');
+                text.textContent = 'CONECTADO';
+            } else {
+                dot.classList.add('disconnected');
+                text.textContent = 'DESCONECTADO';
+            }
+        }
+
+        connection.onreconnecting(() => updateConnectionUI(false));
+        connection.onreconnected(() => updateConnectionUI(true));
+        connection.onclose(() => updateConnectionUI(false));
+
+        // Iniciar conexión
         connection.start()
             .then(() => {
-                console.log("SignalR conectado");
-                connection.invoke("JoinAsManager");
+                console.log("✅ SignalR conectado a AuthService");
+                updateConnectionUI(true);
             })
-            .catch(err => console.error(err));
-
-        // ── Simulación de eventos para demo ──────────────────────────────────────────
-        //const sampleEvents = [
-        //  { status: 'blue', title: '🔑 OTP Generado', batchId: 'LOT-2024-A847', supervisorId: 'SUP-Martinez', operatorId: 'OP-Ramirez', message: 'OTP generado. Esperando validación.' },
-        //  { status: 'green', title: '✅ Salida Autorizada', batchId: 'LOT-2024-A847', supervisorId: 'SUP-Martinez', operatorId: 'OP-Ramirez', message: 'Autorización válida. Despacho aprobado.' },
-        //  { status: 'blue', title: '🔑 OTP Generado', batchId: 'LOT-2024-B203', supervisorId: 'SUP-Torres', operatorId: 'OP-Gutierrez', message: 'OTP generado. Esperando validación.' },
-        //  { status: 'yellow', title: '⏱️ Código Expirado', batchId: 'LOT-2024-B203', supervisorId: 'SUP-Torres', operatorId: 'OP-Gutierrez', message: 'Código expirado. Solicite uno nuevo.' },
-        //  { status: 'blue', title: '🔑 OTP Generado', batchId: 'LOT-2024-C991', supervisorId: 'SUP-Jimenez', operatorId: 'OP-Lopez', message: 'OTP generado. Esperando validación.' },
-        //  { status: 'red', title: '🚨 INTENTO DE FRAUDE', batchId: 'LOT-2024-C991', supervisorId: 'SUP-Jimenez', operatorId: 'OP-Lopez', message: 'FRAUDE: Código vinculado a LOT-2024-A847 usado en LOT-2024-C991.', isFraud: true },
-        //  { status: 'green', title: '✅ Salida Autorizada', batchId: 'LOT-2024-D445', supervisorId: 'SUP-Reyes', operatorId: 'OP-Mora', message: 'Autorización válida. Geofence confirmado.' },
-        //];
-
-        //let sampleIndex = 0;
-
-        //function simulateEvent() {
-        //    const evt = sampleEvents[sampleIndex % sampleEvents.length];
-        //    sampleIndex++;
-        //    handleAuditEvent({
-        //        ...evt,
-        //        eventId: crypto.randomUUID(),
-        //        timestamp: new Date().toISOString()
-        //    });
-        //}
+            .catch(err => {
+                console.error("❌ Error al conectar SignalR:", err);
+                updateConnectionUI(false);
+            });
 
         // ── Event Handlers ────────────────────────────────────────────────────────────
         function handleAuditEvent(evt) {
@@ -1118,7 +1127,7 @@
             document.getElementById('bc-operator').textContent = evt.operatorId;
             document.getElementById('bc-time').textContent = new Date(evt.timestamp).toLocaleTimeString('es-MX');
 
-            // Timer (solo para OTPs generados)
+            // Timer (solo para OTPs generados, 90 segundos como lo configuramos en ATUCore)
             if (evt.status === 'blue') startTimer(90);
         }
 
@@ -1168,20 +1177,20 @@
             }
 
             const html = filtered.slice(0, 100).map(evt => `
-            <div class="audit-event">
-              <div class="event-stripe ${evt.status}"></div>
-              <div class="event-time">${formatTime(evt.timestamp)}</div>
-              <div class="event-body">
-                <div class="event-title" style="color:${getColor(evt.status)}">${evt.title}</div>
-                <div class="event-meta">
-                  <span class="batch">${evt.batchId}</span>
-                  <span class="supervisor">${evt.supervisorId}</span>
-                  <span>${evt.operatorId}</span>
+                <div class="audit-event">
+                  <div class="event-stripe ${evt.status}"></div>
+                  <div class="event-time">${formatTime(evt.timestamp)}</div>
+                  <div class="event-body">
+                    <div class="event-title" style="color:${getColor(evt.status)}">${evt.title}</div>
+                    <div class="event-meta">
+                      <span class="batch">${evt.batchId}</span>
+                      <span class="supervisor">${evt.supervisorId}</span>
+                      <span>${evt.operatorId}</span>
+                    </div>
+                  </div>
+                  <div class="event-badge ${evt.status}">${getStatusLabel(evt.status)}</div>
                 </div>
-              </div>
-              <div class="event-badge ${evt.status}">${getStatusLabel(evt.status)}</div>
-            </div>
-          `).join('');
+              `).join('');
 
             feed.innerHTML = html;
         }
@@ -1216,15 +1225,6 @@
 
         function dismissFraud() {
             document.getElementById('fraud-overlay').classList.remove('visible');
-        }
-
-        //// ── Demo: Auto-simulate events ─────────────────────────────────────────────────
-        //setTimeout(() => simulateEvent(), 1500);
-        //setTimeout(() => simulateEvent(), 4000);
-        //setTimeout(() => simulateEvent(), 6000);
-        //setTimeout(() => simulateEvent(), 9000);
-        //setTimeout(() => simulateEvent(), 11500);
-        //setTimeout(() => simulateEvent(), 14000);
-        //setInterval(() => simulateEvent(), 8000);</script>
+        }</script>
 </body>
 </html>

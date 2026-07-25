@@ -41,7 +41,7 @@ public class AuditEvent
     public string FechaCaducidad { get; set; } = string.Empty;
     public bool IsAuthorized { get; set; }
     public string Message { get; set; } = string.Empty;
-    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
     public string? GeofenceZoneId { get; set; }
     public bool RequiresImmediateAction { get; set; } = false;
 }
